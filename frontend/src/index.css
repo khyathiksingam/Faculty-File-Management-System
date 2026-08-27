@@ -14,6 +14,10 @@
   --color-brand-800: #1e40af;
   --color-brand-900: #1e3a8a;
   --color-brand-950: #172554;
+  
+  --color-slate-750: #243247;
+  --color-slate-850: #151e2e;
+  --color-slate-950: #090d16;
 }
 
 @layer base {
