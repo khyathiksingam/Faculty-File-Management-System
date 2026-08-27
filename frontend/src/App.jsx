@@ -30,6 +30,7 @@ function MainApp() {
   const [currentPath, setCurrentPath] = useState('/dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [storageStats, setStorageStats] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Global modals
   const [globalUploadOpen, setGlobalUploadOpen] = useState(false);
@@ -57,6 +58,7 @@ function MainApp() {
     if (q && q.trim()) {
       setSearchQuery(q.trim());
       setCurrentPath(`/search?q=${encodeURIComponent(q.trim())}`);
+      setMobileMenuOpen(false);
     }
   };
 
@@ -68,13 +70,14 @@ function MainApp() {
       setSearchQuery('');
     }
     setCurrentPath(path);
+    setMobileMenuOpen(false);
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Loading Faculty File Management System...
           </p>
@@ -152,15 +155,17 @@ function MainApp() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen flex-col bg-slate-50">
       {/* Top Navbar */}
       <Navbar
         currentSearchQuery={searchQuery}
         onSearch={handleSearch}
         onNavigate={handleNavigate}
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        mobileMenuOpen={mobileMenuOpen}
       />
 
-      {/* Main Content Area with Sidebar */}
+      {/* Main Content Area with Responsive Sidebar */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           currentPath={currentPath}
@@ -168,9 +173,11 @@ function MainApp() {
           onUploadClick={() => setGlobalUploadOpen(true)}
           onNewFolderClick={() => setGlobalNewFolderOpen(true)}
           storageStats={storageStats}
+          mobileOpen={mobileMenuOpen}
+          onCloseMobile={() => setMobileMenuOpen(false)}
         />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">
             {renderCurrentView()}
           </div>
