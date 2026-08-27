@@ -36,8 +36,8 @@ export default function LoginPage() {
         <div className="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-2xl backdrop-blur-xl text-left">
           {/* College Header */}
           <div className="text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-blue-500 text-white shadow-lg shadow-indigo-500/25">
-              <Building2 className="h-7 w-7" />
+            <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-slate-950 shadow-xl shadow-indigo-500/30 ring-2 ring-indigo-500/40">
+              <img src="/logo.png" alt="FFMS VNR VJIET" className="h-full w-full object-cover" />
             </div>
             <h2 className="mt-4 text-xs font-extrabold uppercase tracking-wide text-indigo-900 line-clamp-2 px-2">
               {collegeSettings?.college_name || 'Vallurupalli Nageswara Rao Vignana Jyothi Institute of Engineering &Technology'}

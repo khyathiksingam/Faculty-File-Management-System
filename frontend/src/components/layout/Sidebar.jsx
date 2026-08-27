@@ -187,15 +187,15 @@ export default function Sidebar({
           {/* Drawer Container */}
           <div className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 p-4">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
-                  <Building2 className="h-4 w-4" />
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-slate-950 shadow-sm ring-1 ring-indigo-500/30">
+                  <img src="/logo.png" alt="FFMS" className="h-full w-full object-cover" />
                 </div>
-                <span className="font-bold text-xs text-indigo-900">VNR VJIET Navigation</span>
+                <span className="font-extrabold text-xs text-indigo-900 dark:text-indigo-300">VNR VJIET FFMS</span>
               </div>
               <button 
                 onClick={onCloseMobile}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <X className="h-4 w-4" />
               </button>

@@ -1,16 +1,32 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  // Always maintain clean, consistent modern institutional theme
-  React.useEffect(() => {
-    document.documentElement.classList.remove('dark');
-    localStorage.setItem('ffms_theme', 'light');
-  }, []);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('ffms_theme');
+    if (saved) return saved;
+    return 'light';
+  });
+
+  const isDark = theme === 'dark';
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('ffms_theme', theme);
+  }, [theme, isDark]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   return (
-    <ThemeContext.Provider value={{ isDark: false }}>
+    <ThemeContext.Provider value={{ theme, isDark, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
