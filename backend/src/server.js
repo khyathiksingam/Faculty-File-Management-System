@@ -36,26 +36,25 @@ app.get('/api/health', (req, res) => {
 const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
 
-// Fallback to React index.html for client-side routing in Express 5
+// Fallback to React index.html for client-side routing
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next();
   }
   const indexPath = path.join(frontendDistPath, 'index.html');
-  res.sendFile(indexPath, err => {
-    if (err) {
-      res.status(200).send(`
-        <!DOCTYPE html>
-        <html>
-          <head><title>Faculty File Management System</title></head>
-          <body style="font-family: sans-serif; padding: 40px; text-align: center;">
-            <h2>Faculty File Management System API is active on port ${PORT}</h2>
-            <p>Vite frontend dev server runs at <a href="http://localhost:5173">http://localhost:5173</a></p>
-          </body>
-        </html>
-      `);
-    }
-  });
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head><title>Faculty File Management System</title></head>
+      <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+        <h2>Faculty File Management System API is active on port ${PORT}</h2>
+        <p>Vite frontend dev server runs at <a href="http://localhost:5173">http://localhost:5173</a></p>
+      </body>
+    </html>
+  `);
 });
 
 // Global error handler

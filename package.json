@@ -4,6 +4,7 @@
   "description": "Faculty File Management System (FFMS) - College Document Management Platform",
   "main": "backend/src/server.js",
   "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
     "start": "node backend/src/server.js",
     "server": "node backend/src/server.js",
     "frontend:dev": "npm run dev --prefix frontend",
