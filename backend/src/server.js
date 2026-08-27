@@ -1,0 +1,87 @@
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+const { initDB } = require('./config/db');
+const seed = require('./config/seed');
+const apiRoutes = require('./routes/api');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// CORS setup
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
+// Body parsers
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Mount API routes
+app.use('/api', apiRoutes);
+
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    system: 'Faculty File Management System'
+  });
+});
+
+// Serve frontend static build if available
+const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDistPath));
+
+// Fallback to React index.html for client-side routing in Express 5
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  res.sendFile(indexPath, err => {
+    if (err) {
+      res.status(200).send(`
+        <!DOCTYPE html>
+        <html>
+          <head><title>Faculty File Management System</title></head>
+          <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+            <h2>Faculty File Management System API is active on port ${PORT}</h2>
+            <p>Vite frontend dev server runs at <a href="http://localhost:5173">http://localhost:5173</a></p>
+          </body>
+        </html>
+      `);
+    }
+  });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'An unexpected server error occurred.'
+  });
+});
+
+// Initialize database, seed, and start server
+async function startServer() {
+  try {
+    await initDB();
+    await seed();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`=======================================================`);
+      console.log(`  Faculty File Management System (FFMS) Server Active  `);
+      console.log(`  Local:   http://localhost:${PORT}                    `);
+      console.log(`  Network: http://192.168.1.236:${PORT}                `);
+      console.log(`=======================================================`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
