@@ -36,17 +36,17 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
   return (
     <div className="space-y-6 text-left">
       {/* Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 dark:from-slate-900 dark:via-indigo-950/70 dark:to-slate-900/95 dark:border dark:border-indigo-500/30 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20 dark:shadow-2xl dark:shadow-black/50 transition-colors">
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3.5 py-1 text-xs font-bold backdrop-blur-md text-white border border-white/20">
-            <Shield className="h-3.5 w-3.5" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/20 dark:bg-indigo-950/80 px-3.5 py-1 text-xs font-bold backdrop-blur-md text-white dark:text-indigo-300 border border-white/20 dark:border-indigo-500/40">
+            <Shield className="h-3.5 w-3.5 text-indigo-200 dark:text-indigo-400" />
             <span className="uppercase tracking-wider">{user?.role_name || 'FACULTY'} PORTAL</span>
             {user?.department_name && <span>• {user.department_name}</span>}
           </div>
           <h2 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">
             Welcome, {user?.full_name}
           </h2>
-          <p className="mt-1 max-w-xl text-xs sm:text-sm text-blue-100 leading-relaxed font-normal">
+          <p className="mt-1 max-w-xl text-xs sm:text-sm text-blue-100 dark:text-slate-300 leading-relaxed font-normal">
             {isAdmin 
               ? 'Complete administrative authority over college documents, departments, faculty accounts, and storage analytics.'
               : isHOD 
@@ -58,24 +58,24 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               onClick={onUploadClick}
-              className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-extrabold text-indigo-900 shadow-lg hover:bg-blue-50 transition active:scale-95 border border-white cursor-pointer"
+              className="flex items-center gap-2 rounded-xl bg-white dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 px-5 py-2.5 text-xs font-extrabold text-indigo-900 dark:text-white shadow-lg hover:bg-blue-50 dark:hover:from-blue-500 dark:hover:to-indigo-500 transition active:scale-95 border border-white dark:border-indigo-400/30 cursor-pointer"
             >
-              <Upload className="h-4 w-4 text-indigo-700 stroke-[2.5]" />
-              <span className="text-indigo-950 font-bold">+ Upload File</span>
+              <Upload className="h-4 w-4 text-indigo-700 dark:text-white stroke-[2.5]" />
+              <span className="font-bold">+ Upload File</span>
             </button>
             <button
               onClick={() => onNavigate('/files')}
-              className="flex items-center gap-2 rounded-xl bg-white/20 border border-white/30 px-5 py-2.5 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/30 cursor-pointer"
+              className="flex items-center gap-2 rounded-xl bg-white/20 dark:bg-slate-800/90 border border-white/30 dark:border-slate-700/80 px-5 py-2.5 text-xs font-bold text-white dark:text-slate-200 backdrop-blur-md transition hover:bg-white/30 dark:hover:bg-slate-700 cursor-pointer"
             >
               <span>Browse Files</span>
-              <ArrowRight className="h-3.5 w-3.5 text-white" />
+              <ArrowRight className="h-3.5 w-3.5 text-white dark:text-slate-200" />
             </button>
           </div>
         </div>
 
         {/* Decorative background accents */}
-        <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-        <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-indigo-400/20 blur-2xl pointer-events-none" />
+        <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 dark:bg-indigo-600/10 blur-3xl pointer-events-none" />
+        <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-indigo-400/20 dark:bg-blue-500/10 blur-2xl pointer-events-none" />
       </div>
 
       {/* KPI Statistic Cards Grid */}
