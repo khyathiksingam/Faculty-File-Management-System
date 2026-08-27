@@ -1,22 +1,24 @@
 import React from 'react';
-import { Files, Search, Star, Bell, Trash2, Folder, Plus, Upload } from 'lucide-react';
+import { Files, Search, Star, Bell, Trash2, Folder, Plus, Upload, Share2 } from 'lucide-react';
 
 export default function EmptyState({ type = 'files', title, description, actionText, onAction }) {
   const getIcon = () => {
     switch (type) {
       case 'search':
-        return <Search className="h-10 w-10 text-slate-400" />;
+        return <Search className="h-10 w-10 text-slate-400 dark:text-slate-500" />;
       case 'favorites':
         return <Star className="h-10 w-10 text-amber-500" />;
       case 'notifications':
-        return <Bell className="h-10 w-10 text-slate-400" />;
+        return <Bell className="h-10 w-10 text-slate-400 dark:text-slate-500" />;
       case 'trash':
         return <Trash2 className="h-10 w-10 text-rose-500" />;
       case 'folders':
-        return <Folder className="h-10 w-10 text-indigo-500" />;
+        return <Folder className="h-10 w-10 text-indigo-500 dark:text-indigo-400" />;
+      case 'shared':
+        return <Share2 className="h-10 w-10 text-indigo-500 dark:text-indigo-400" />;
       case 'files':
       default:
-        return <Files className="h-10 w-10 text-indigo-500" />;
+        return <Files className="h-10 w-10 text-indigo-500 dark:text-indigo-400" />;
     }
   };
 
@@ -42,6 +44,11 @@ export default function EmptyState({ type = 'files', title, description, actionT
           title: title || 'No folders created yet',
           description: description || 'Organize your files by creating departmental and category folders.'
         };
+      case 'shared':
+        return {
+          title: title || 'No shared files yet',
+          description: description || 'When faculty members or department heads share files with you, they will appear here.'
+        };
       case 'files':
       default:
         return {
@@ -54,14 +61,14 @@ export default function EmptyState({ type = 'files', title, description, actionT
   const defaults = getDefaults();
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50 shadow-xs mb-4">
+    <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center shadow-xs transition-colors duration-200">
+      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50 dark:bg-slate-800 shadow-xs mb-4">
         {getIcon()}
       </div>
-      <h3 className="font-extrabold text-base text-slate-900">
+      <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
         {defaults.title}
       </h3>
-      <p className="mt-1 max-w-sm text-xs text-slate-500 font-medium leading-relaxed">
+      <p className="mt-1 max-w-sm text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
         {defaults.description}
       </p>
       {actionText && onAction && (
