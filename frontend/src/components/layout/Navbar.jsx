@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Bell, LogOut, User, Building2, 
   Shield, FileText, ChevronDown, CheckCircle2,
-  Trash2, Menu, X
+  Trash2, Menu, X, Maximize2, Minimize2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -16,6 +16,7 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const profileRef = useRef(null);
   const notifRef = useRef(null);
@@ -23,6 +24,14 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
   useEffect(() => {
     setSearchQuery(currentSearchQuery || '');
   }, [currentSearchQuery]);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -42,6 +51,22 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
     if (onSearch) {
       onSearch(searchQuery);
       setShowMobileSearch(false);
+    }
+  };
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
     }
   };
 
@@ -109,15 +134,24 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
         </form>
       </div>
 
-      {/* Right Controls: Search Toggle (Mobile), Role Badge, Notifications, User Profile */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      {/* Right Controls: Search Toggle (Mobile), Fullscreen Toggle, Role Badge, Notifications, User Profile */}
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Mobile Search Toggle */}
         <button
           onClick={() => setShowMobileSearch(!showMobileSearch)}
-          className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition"
+          className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
           title="Search"
         >
           <Search className="h-4 w-4" />
+        </button>
+
+        {/* 1-Tap Fullscreen Mode Button */}
+        <button
+          onClick={toggleFullScreen}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition cursor-pointer"
+          title={isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen App Mode'}
+        >
+          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </button>
 
         {/* Current Role Badge */}
@@ -130,7 +164,7 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
             title="Notifications"
           >
             <Bell className="h-4 w-4" />
