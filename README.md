@@ -60,10 +60,7 @@ node backend/src/server.js
 | Role | Username | Password |
 | :--- | :--- | :--- |
 | **System Administrator** | `admin` | `Admin@123` |
-| **HOD (CSE)** | `dr.ravi` | `Faculty@123` |
-| **HOD (ECE)** | `dr.anita` | `Faculty@123` |
-| **Faculty (CSE)** | `prof.vikram` | `Faculty@123` |
-| **Faculty (CSE)** | `dr.sneha` | `Faculty@123` |
+
 
 ---
 
