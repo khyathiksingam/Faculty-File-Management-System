@@ -1,25 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Search, Bell, LogOut, User, Building2, 
-  Shield, FileText, ChevronDown, CheckCircle2,
-  Trash2, Menu, X, Maximize2, Minimize2
+  Search, LogOut, User, Building2, 
+  Shield, ChevronDown, Menu, X, Maximize2, Minimize2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useNotifications } from '../../context/NotificationContext';
-import { formatRelativeTime } from '../../utils/formatters';
 
 export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobileMenuOpen, currentSearchQuery = '' }) {
   const { user, logout, collegeSettings } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
 
   const [searchQuery, setSearchQuery] = useState(currentSearchQuery);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const profileRef = useRef(null);
-  const notifRef = useRef(null);
 
   useEffect(() => {
     setSearchQuery(currentSearchQuery || '');
@@ -37,9 +31,6 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
     function handleClickOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setShowProfileMenu(false);
-      }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotifications(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -67,14 +58,6 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
       } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen();
       }
-    }
-  };
-
-  const handleNotificationClick = (n) => {
-    markAsRead(n.id);
-    setShowNotifications(false);
-    if (n.link && onNavigate) {
-      onNavigate(n.link);
     }
   };
 
@@ -134,7 +117,7 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
         </form>
       </div>
 
-      {/* Right Controls: Search Toggle (Mobile), Fullscreen Toggle, Role Badge, Notifications, User Profile */}
+      {/* Right Controls: Search Toggle (Mobile), Fullscreen Toggle, Role Badge, User Profile */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Mobile Search Toggle */}
         <button
@@ -158,98 +141,6 @@ export default function Navbar({ onSearch, onNavigate, onToggleMobileMenu, mobil
         <div className={`hidden sm:flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold ${roleColor}`}>
           <Shield className="h-3.5 w-3.5" />
           <span>Role: <strong className="uppercase">{user?.role_name || 'FACULTY'}</strong></span>
-        </div>
-
-        {/* Notifications */}
-        <div className="relative" ref={notifRef}>
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
-            title="Notifications"
-          >
-            <Bell className="h-4 w-4" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-white">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
-
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-72 sm:w-96 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl z-50">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm text-slate-900">Notifications</span>
-                  {unreadCount > 0 && (
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                      {unreadCount} new
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      className="text-[11px] font-semibold text-indigo-600 hover:underline cursor-pointer"
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                  {notifications.length > 0 && (
-                    <button
-                      onClick={clearAll}
-                      className="text-[11px] text-slate-400 hover:text-rose-500 cursor-pointer"
-                      title="Clear All"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-2 max-h-80 space-y-1.5 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-slate-400">
-                    No new notifications
-                  </div>
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      onClick={() => handleNotificationClick(n)}
-                      className={`flex cursor-pointer items-start gap-2.5 rounded-xl p-2.5 text-xs transition ${
-                        !n.read_status 
-                          ? 'bg-indigo-50/70 font-medium' 
-                          : 'hover:bg-slate-50 text-slate-600'
-                      }`}
-                    >
-                      <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
-                        !n.read_status 
-                          ? 'bg-indigo-600 text-white' 
-                          : 'bg-slate-200 text-slate-600'
-                      }`}>
-                        <FileText className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <div className="font-semibold text-slate-900 truncate">
-                          {n.title}
-                        </div>
-                        <div className="text-[11px] text-slate-500 line-clamp-2">
-                          {n.message}
-                        </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
-                          {formatRelativeTime(n.created_at)}
-                        </div>
-                      </div>
-                      {!n.read_status && (
-                        <div className="h-2 w-2 rounded-full bg-indigo-600 mt-1.5" />
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* User Profile Menu */}
