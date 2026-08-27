@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-50: #eff6ff;
   --color-brand-100: #dbeafe;
@@ -15,18 +17,25 @@
 }
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
+  
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     background-color: #f8fafc;
     color: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  .dark body,
   html.dark body {
-    background-color: #0b0f19;
-    color: #f8fafc;
+    background-color: #090d16;
+    color: #f1f5f9;
   }
 }
 
@@ -65,7 +74,7 @@
   cursor: pointer;
 }
 
-.dark .btn-secondary {
+html.dark .btn-secondary {
   background-color: #1e293b;
   color: #e2e8f0 !important;
   border-color: #334155;
@@ -84,10 +93,10 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dark .app-card {
+html.dark .app-card {
   background: #111827;
   border-color: #1f2937;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4);
 }
 
 .app-card:hover {
@@ -95,7 +104,7 @@
   box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.06), 0 8px 10px -6px rgb(0 0 0 / 0.04);
 }
 
-.dark .app-card:hover {
+html.dark .app-card:hover {
   border-color: #374151;
 }
 
@@ -109,7 +118,7 @@
   background: #f1f5f9;
 }
 
-.dark ::-webkit-scrollbar-track {
+html.dark ::-webkit-scrollbar-track {
   background: #0f172a;
 }
 
@@ -118,7 +127,7 @@
   border-radius: 9999px;
 }
 
-.dark ::-webkit-scrollbar-thumb {
+html.dark ::-webkit-scrollbar-thumb {
   background: #334155;
 }
 
