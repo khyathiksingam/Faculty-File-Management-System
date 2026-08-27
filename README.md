@@ -6,6 +6,15 @@ A secure, modern, responsive full-stack web application designed for colleges an
 
 ---
 
+## 🔒 Live HTTPS URL & Deployment
+
+- **Live Secure HTTPS Tunnel**: **[https://ffms-vnrvjiet.loca.lt](https://ffms-vnrvjiet.loca.lt)** *(Tunnel Password / IP: `103.248.208.99`)*
+- **Local Network (Wi-Fi)**: `http://192.168.1.236:5000`
+- **Localhost**: `http://localhost:5000`
+- **GitHub Repository**: **[https://github.com/khyathiksingam/Faculty-File-Management-System.git](https://github.com/khyathiksingam/Faculty-File-Management-System.git)**
+
+---
+
 ## 🌟 Key Features
 
 - **Role-Based Access Control (RBAC)**: Distinct permissions and dashboards for **Admin**, **Head of Department (HOD)**, and **Faculty Members**.
@@ -16,6 +25,7 @@ A secure, modern, responsive full-stack web application designed for colleges an
 - **Recycle Bin & Recovery**: Soft-delete safety net with restoration and permanent deletion capabilities.
 - **Storage Analytics**: Real-time quota monitoring, department storage breakdown, file category distribution, and top largest documents tracker.
 - **Mobile Responsive & Network Ready**: Accessible across desktop, tablet, and mobile devices connected to the local network.
+- **Progressive Web App (PWA)**: Installable directly onto Android & iOS devices without browser address bar.
 
 ---
 
@@ -49,10 +59,6 @@ npm run build --prefix frontend
 node backend/src/server.js
 ```
 
-### 4. Accessing the Application
-- **Local Desktop**: `http://localhost:5000`
-- **Mobile / Local Network**: `http://<YOUR_LAN_IP>:5000` (e.g. `http://192.168.1.236:5000`)
-
 ---
 
 ## 🔑 Default Credentials
@@ -60,7 +66,10 @@ node backend/src/server.js
 | Role | Username | Password |
 | :--- | :--- | :--- |
 | **System Administrator** | `admin` | `Admin@123` |
-
+| **HOD (CSE)** | `dr.ravi` | `Faculty@123` |
+| **HOD (ECE)** | `dr.anita` | `Faculty@123` |
+| **Faculty (CSE)** | `prof.vikram` | `Faculty@123` |
+| **Faculty (CSE)** | `dr.sneha` | `Faculty@123` |
 
 ---
 
