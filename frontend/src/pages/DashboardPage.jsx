@@ -4,12 +4,14 @@ import {
   Upload, ArrowRight, Shield, Activity, FileText, CheckCircle2, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api, getToken } from '../utils/api';
 import { formatBytes, formatDate, formatRelativeTime } from '../utils/formatters';
 import { getFileIcon } from '../components/files/FileCard';
 
 export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile }) {
   const { user, isAdmin, isHOD, isFaculty } = useAuth();
+  const { isDark } = useTheme();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,18 +37,30 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
 
   return (
     <div className="space-y-6 text-left">
-      {/* Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 dark:from-slate-900 dark:via-indigo-950/70 dark:to-slate-900/95 dark:border dark:border-indigo-500/30 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20 dark:shadow-2xl dark:shadow-black/50 transition-colors">
+      {/* Welcome Hero Banner - Adaptive Dark/Light Mode */}
+      <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white transition-all duration-300 ${
+        isDark 
+          ? 'bg-slate-900 border border-slate-800 shadow-2xl shadow-black/60 ring-1 ring-white/5' 
+          : 'bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 shadow-xl shadow-indigo-500/20'
+      }`}>
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/20 dark:bg-indigo-950/80 px-3.5 py-1 text-xs font-bold backdrop-blur-md text-white dark:text-indigo-300 border border-white/20 dark:border-indigo-500/40">
-            <Shield className="h-3.5 w-3.5 text-indigo-200 dark:text-indigo-400" />
+          <div className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-xs font-bold border transition ${
+            isDark 
+              ? 'bg-slate-800/90 text-indigo-300 border-slate-700' 
+              : 'bg-white/20 text-white border-white/20 backdrop-blur-md'
+          }`}>
+            <Shield className={`h-3.5 w-3.5 ${isDark ? 'text-indigo-400' : 'text-white'}`} />
             <span className="uppercase tracking-wider">{user?.role_name || 'FACULTY'} PORTAL</span>
             {user?.department_name && <span>• {user.department_name}</span>}
           </div>
+
           <h2 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">
             Welcome, {user?.full_name}
           </h2>
-          <p className="mt-1 max-w-xl text-xs sm:text-sm text-blue-100 dark:text-slate-300 leading-relaxed font-normal">
+
+          <p className={`mt-1 max-w-xl text-xs sm:text-sm leading-relaxed font-normal ${
+            isDark ? 'text-slate-300' : 'text-blue-100'
+          }`}>
             {isAdmin 
               ? 'Complete administrative authority over college documents, departments, faculty accounts, and storage analytics.'
               : isHOD 
@@ -54,28 +68,40 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
               : 'Upload, organize, search inside scanned papers with OCR, and manage academic documents.'}
           </p>
 
-          {/* Action Buttons with High Contrast */}
+          {/* Action Buttons */}
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               onClick={onUploadClick}
-              className="flex items-center gap-2 rounded-xl bg-white dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 px-5 py-2.5 text-xs font-extrabold text-indigo-900 dark:text-white shadow-lg hover:bg-blue-50 dark:hover:from-blue-500 dark:hover:to-indigo-500 transition active:scale-95 border border-white dark:border-indigo-400/30 cursor-pointer"
+              className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-extrabold shadow-lg transition active:scale-95 cursor-pointer ${
+                isDark
+                  ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white border border-indigo-500/40 shadow-indigo-600/25 hover:from-blue-500 hover:to-indigo-500'
+                  : 'bg-white text-indigo-950 border border-white hover:bg-blue-50'
+              }`}
             >
-              <Upload className="h-4 w-4 text-indigo-700 dark:text-white stroke-[2.5]" />
+              <Upload className={`h-4 w-4 stroke-[2.5] ${isDark ? 'text-white' : 'text-indigo-700'}`} />
               <span className="font-bold">+ Upload File</span>
             </button>
             <button
               onClick={() => onNavigate('/files')}
-              className="flex items-center gap-2 rounded-xl bg-white/20 dark:bg-slate-800/90 border border-white/30 dark:border-slate-700/80 px-5 py-2.5 text-xs font-bold text-white dark:text-slate-200 backdrop-blur-md transition hover:bg-white/30 dark:hover:bg-slate-700 cursor-pointer"
+              className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition active:scale-95 cursor-pointer border ${
+                isDark
+                  ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-750 hover:text-white'
+                  : 'bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-md'
+              }`}
             >
               <span>Browse Files</span>
-              <ArrowRight className="h-3.5 w-3.5 text-white dark:text-slate-200" />
+              <ArrowRight className="h-3.5 w-3.5 text-white" />
             </button>
           </div>
         </div>
 
         {/* Decorative background accents */}
-        <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-white/10 dark:bg-indigo-600/10 blur-3xl pointer-events-none" />
-        <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-indigo-400/20 dark:bg-blue-500/10 blur-2xl pointer-events-none" />
+        <div className={`absolute -right-12 -top-12 h-64 w-64 rounded-full blur-3xl pointer-events-none ${
+          isDark ? 'bg-indigo-600/10' : 'bg-white/10'
+        }`} />
+        <div className={`absolute right-32 -bottom-16 h-48 w-48 rounded-full blur-2xl pointer-events-none ${
+          isDark ? 'bg-blue-600/10' : 'bg-indigo-400/20'
+        }`} />
       </div>
 
       {/* KPI Statistic Cards Grid */}
