@@ -30,6 +30,8 @@ router.get('/settings/public', settingsController.getSettings);
 // ---------------- Protected Settings Routes ----------------
 router.get('/settings', authenticate, settingsController.getSettings);
 router.put('/settings', authenticate, requireRoles('admin'), settingsController.updateSettings);
+router.get('/settings/backup', authenticate, requireRoles('admin'), settingsController.backupDatabase);
+router.post('/settings/restore', authenticate, requireRoles('admin'), upload.single('backup'), settingsController.restoreDatabase);
 
 // ---------------- User Management Routes ----------------
 router.get('/users', authenticate, userController.getAllUsers);

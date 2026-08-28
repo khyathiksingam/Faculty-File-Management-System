@@ -49,12 +49,21 @@ const fileController = {
         const storedFilename = file.filename;
         const storedFullPath = getStoragePath(storedFilename);
 
+        let fileBuffer = null;
+        try {
+          if (fs.existsSync(storedFullPath)) {
+            fileBuffer = fs.readFileSync(storedFullPath);
+          }
+        } catch (e) {
+          console.warn('Could not read file buffer for persistence:', e);
+        }
+
         const result = await dbHelper.run(`
           INSERT INTO files (
             name, original_name, file_type, mime_type, size,
             storage_path, folder_id, owner_id, department_id,
-            version, ocr_status, visibility
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?)
+            version, ocr_status, visibility, file_data
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?, ?)
         `, [
           originalName,
           originalName,
@@ -65,16 +74,17 @@ const fileController = {
           (folder_id && folder_id !== 'null' && folder_id !== '') ? folder_id : null,
           user.id,
           targetDeptId,
-          fileVisibility
+          fileVisibility,
+          fileBuffer
         ]);
 
         const fileId = result.lastID;
 
         // Record initial version 1
         await dbHelper.run(`
-          INSERT INTO file_versions (file_id, version_number, storage_path, size, uploaded_by, note)
-          VALUES (?, 1, ?, ?, ?, 'Initial upload')
-        `, [fileId, storedFilename, file.size, user.id]);
+          INSERT INTO file_versions (file_id, version_number, storage_path, size, uploaded_by, note, file_data)
+          VALUES (?, 1, ?, ?, ?, 'Initial upload', ?)
+        `, [fileId, storedFilename, file.size, user.id, fileBuffer]);
 
         // Trigger asynchronous background OCR indexing
         processFileOCR(fileId, storedFullPath, file.mimetype).catch(err => {
@@ -363,7 +373,17 @@ const fileController = {
         return res.status(404).json({ error: 'File not found.' });
       }
 
-      const fullPath = getStoragePath(file.storage_path);
+      let fullPath = getStoragePath(file.storage_path);
+      if (!fs.existsSync(fullPath) && file.file_data) {
+        try {
+          const dir = path.dirname(fullPath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(fullPath, Buffer.from(file.file_data));
+        } catch (e) {
+          console.warn('Could not auto-restore file binary to disk:', e);
+        }
+      }
+
       if (!fs.existsSync(fullPath)) {
         return res.status(404).json({ error: 'Physical file not found in storage.' });
       }
@@ -401,7 +421,17 @@ const fileController = {
         return res.status(404).json({ error: 'File not found.' });
       }
 
-      const fullPath = getStoragePath(file.storage_path);
+      let fullPath = getStoragePath(file.storage_path);
+      if (!fs.existsSync(fullPath) && file.file_data) {
+        try {
+          const dir = path.dirname(fullPath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(fullPath, Buffer.from(file.file_data));
+        } catch (e) {
+          console.warn('Could not auto-restore file binary to disk:', e);
+        }
+      }
+
       if (!fs.existsSync(fullPath)) {
         return res.status(404).json({ error: 'File not found on storage server.' });
       }
