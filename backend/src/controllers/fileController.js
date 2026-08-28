@@ -583,6 +583,62 @@ const fileController = {
     }
   },
 
+  async batchMoveToTrash(req, res) {
+    try {
+      const user = req.user;
+      const { file_ids } = req.body;
+
+      if (!file_ids || !Array.isArray(file_ids) || file_ids.length === 0) {
+        return res.status(400).json({ error: 'No files specified.' });
+      }
+
+      let deletedCount = 0;
+      for (const id of file_ids) {
+        const file = await dbHelper.get("SELECT * FROM files WHERE id = ?", [id]);
+        if (file && (user.role_name === 'admin' || file.owner_id === user.id || (user.role_name === 'hod' && file.department_id === user.department_id))) {
+          await dbHelper.run("UPDATE files SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
+          deletedCount++;
+        }
+      }
+
+      await dbHelper.run(`
+        INSERT INTO activity_logs (user_id, action, department_id, metadata)
+        VALUES (?, 'Batch Moved to Trash', ?, ?)
+      `, [user.id, user.department_id, JSON.stringify({ count: deletedCount })]);
+
+      res.json({ success: true, count: deletedCount, message: `${deletedCount} file(s) moved to Trash.` });
+    } catch (error) {
+      console.error('Batch trash error:', error);
+      res.status(500).json({ error: 'Failed to delete selected files.' });
+    }
+  },
+
+  async batchChangeVisibility(req, res) {
+    try {
+      const user = req.user;
+      const { file_ids, visibility } = req.body;
+
+      if (!file_ids || !Array.isArray(file_ids) || file_ids.length === 0) {
+        return res.status(400).json({ error: 'No files specified.' });
+      }
+
+      const newVisibility = visibility === 'private' ? 'private' : 'public';
+      let updatedCount = 0;
+      for (const id of file_ids) {
+        const file = await dbHelper.get("SELECT * FROM files WHERE id = ?", [id]);
+        if (file && (user.role_name === 'admin' || file.owner_id === user.id)) {
+          await dbHelper.run("UPDATE files SET visibility = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [newVisibility, id]);
+          updatedCount++;
+        }
+      }
+
+      res.json({ success: true, count: updatedCount, message: `${updatedCount} file(s) marked as ${newVisibility}.` });
+    } catch (error) {
+      console.error('Batch visibility error:', error);
+      res.status(500).json({ error: 'Failed to update visibility.' });
+    }
+  },
+
   async restoreFile(req, res) {
     try {
       const { id } = req.params;

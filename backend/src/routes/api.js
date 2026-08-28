@@ -68,6 +68,8 @@ router.put('/files/:id/rename', authenticate, fileController.renameFile);
 router.put('/files/:id/move', authenticate, fileController.moveFile);
 router.post('/files/:id/star', authenticate, fileController.toggleStar);
 router.patch('/files/:id/visibility', authenticate, fileController.toggleVisibility);
+router.post('/files/batch-trash', authenticate, fileController.batchMoveToTrash);
+router.post('/files/batch-visibility', authenticate, fileController.batchChangeVisibility);
 router.delete('/files/:id', authenticate, fileController.deleteFile); // soft delete to trash
 router.post('/files/:id/restore', authenticate, fileController.restoreFile);
 router.post('/trash/restore-all', authenticate, fileController.restoreAllTrash);

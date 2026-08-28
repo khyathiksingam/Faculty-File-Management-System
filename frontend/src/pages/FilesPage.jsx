@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   LayoutGrid, List, Filter, ArrowUpDown, Plus, Upload, 
-  Search, FolderPlus, Sparkles, ChevronLeft, ChevronRight
+  Search, FolderPlus, Sparkles, ChevronLeft, ChevronRight,
+  CheckSquare, Square, Check, Globe, Lock, Trash2, X, RotateCcw
 } from 'lucide-react';
 import { api, getToken } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +30,11 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
   const [folders, setFolders] = useState([]);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Multi-Selection State
+  const [selectedFileIds, setSelectedFileIds] = useState([]);
+  const [showBatchTrashDialog, setShowBatchTrashDialog] = useState(false);
+  const [batchActionLoading, setBatchActionLoading] = useState(false);
 
   // Filters & Sorting
   const [filterType, setFilterType] = useState('all');
@@ -87,6 +93,7 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
 
   const loadFiles = async () => {
     setLoading(true);
+    setSelectedFileIds([]);
     try {
       const params = {
         scope: scope,
@@ -100,31 +107,73 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
 
       const data = await api.get('/files', params);
       setFiles(data.files || []);
-      if (data.pagination) {
-        setTotalPages(data.pagination.totalPages || 1);
-        setTotalFilesCount(data.pagination.total || 0);
-      }
+      setTotalPages(data.pagination?.pages || 1);
+      setTotalFilesCount(data.pagination?.total || data.files?.length || 0);
     } catch (err) {
-      console.error('Failed to load files:', err);
+      console.warn('Failed to load files:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownload = (file) => {
-    const token = getToken();
-    window.open(`/api/files/${file.id}/download?token=${token || ''}`, '_blank');
+  const handleSelectAll = () => {
+    if (selectedFileIds.length === files.length) {
+      setSelectedFileIds([]);
+    } else {
+      setSelectedFileIds(files.map(f => f.id));
+    }
+  };
+
+  const handleToggleSelect = (fileId) => {
+    setSelectedFileIds(prev => 
+      prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]
+    );
+  };
+
+  const handleBatchTrash = async () => {
+    if (selectedFileIds.length === 0) return;
+    setBatchActionLoading(true);
+    try {
+      await api.post('/files/batch-trash', { file_ids: selectedFileIds });
+      setFiles(prev => prev.filter(f => !selectedFileIds.includes(f.id)));
+      setTotalFilesCount(prev => Math.max(0, prev - selectedFileIds.length));
+      setSelectedFileIds([]);
+      setShowBatchTrashDialog(false);
+    } catch (err) {
+      alert('Failed to move files to trash: ' + err.message);
+    } finally {
+      setBatchActionLoading(false);
+    }
+  };
+
+  const handleBatchVisibility = async (newVisibility) => {
+    if (selectedFileIds.length === 0) return;
+    try {
+      await api.post('/files/batch-visibility', { file_ids: selectedFileIds, visibility: newVisibility });
+      setFiles(prev => prev.map(f => selectedFileIds.includes(f.id) ? { ...f, visibility: newVisibility } : f));
+      setSelectedFileIds([]);
+    } catch (err) {
+      alert('Failed to update visibility: ' + err.message);
+    }
   };
 
   const handleToggleStar = async (file) => {
     try {
       const res = await api.post(`/files/${file.id}/star`);
-      setFiles(prev =>
-        prev.map(f => (f.id === file.id ? { ...f, is_starred: res.is_starred ? 1 : 0 } : f))
-      );
+      setFiles(prev => prev.map(f => f.id === file.id ? { ...f, is_starred: res.is_favorite } : f));
     } catch (err) {
-      console.error('Star toggle failed:', err);
+      console.warn('Star toggle error:', err);
     }
+  };
+
+  const handleDownload = (file) => {
+    const token = getToken();
+    const link = document.createElement('a');
+    link.href = `/api/files/${file.id}/download?token=${token || ''}`;
+    link.download = file.name || file.original_name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleDeleteFileConfirm = async () => {
@@ -132,8 +181,8 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
     try {
       await api.delete(`/files/${fileToDelete.id}`);
       setFiles(prev => prev.filter(f => f.id !== fileToDelete.id));
+      setTotalFilesCount(prev => Math.max(0, prev - 1));
       setFileToDelete(null);
-      loadFolders();
     } catch (err) {
       alert('Failed to delete file: ' + err.message);
     }
@@ -151,32 +200,55 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
     }
   };
 
+  const isAllSelected = files.length > 0 && selectedFileIds.length === files.length;
+
   return (
-    <div className="space-y-5 text-left">
-      {/* Top Toolbar: Breadcrumbs, Views, Filters, Sort */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-800">
+    <div className="space-y-6 text-left relative pb-20">
+      {/* Header & Controls Toolbar */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
-            {currentFolder ? currentFolder.name : title}
+          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            {title}
           </h2>
-          <Breadcrumbs
-            rootLabel={title}
-            breadcrumbs={breadcrumbs}
-            onNavigateRoot={() => setCurrentFolder(null)}
-            onNavigateFolder={(f) => setCurrentFolder(f)}
-          />
+          <div className="mt-1">
+            <Breadcrumbs
+              items={breadcrumbs}
+              onNavigate={(folder) => setCurrentFolder(folder)}
+              rootLabel="All College Files"
+            />
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Filter Types Dropdown */}
+        {/* Action Buttons & Filters */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Select All Toggle Button */}
+          {files.length > 0 && (
+            <button
+              onClick={handleSelectAll}
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition cursor-pointer ${
+                isAllSelected
+                  ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/60 dark:text-indigo-300 shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-850 dark:text-slate-200'
+              }`}
+            >
+              {isAllSelected ? (
+                <CheckSquare className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+              <span>{isAllSelected ? 'Deselect All' : `Select All (${files.length})`}</span>
+            </button>
+          )}
+
+          {/* File Type Filter */}
           <select
             value={filterType}
-            onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            onChange={(e) => setFilterType(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer"
           >
             <option value="all">All File Types</option>
+            <option value="document">Word Documents (.docx)</option>
             <option value="pdf">PDF Documents</option>
-            <option value="document">Word / Text Documents</option>
             <option value="spreadsheet">Spreadsheets / CSV</option>
             <option value="presentation">Presentations</option>
             <option value="image">Images (OCR)</option>
@@ -189,7 +261,7 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
@@ -204,9 +276,9 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
           <div className="flex items-center rounded-xl border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-800">
             <button
               onClick={() => setViewMode('grid')}
-              className={`rounded-lg p-1.5 transition ${
+              className={`rounded-lg p-1.5 transition cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-slate-100 text-brand-600 dark:bg-slate-700 dark:text-brand-400'
+                  ? 'bg-slate-100 text-indigo-600 dark:bg-slate-700 dark:text-indigo-400'
                   : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
               title="Grid View"
@@ -215,9 +287,9 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`rounded-lg p-1.5 transition ${
+              className={`rounded-lg p-1.5 transition cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-slate-100 text-brand-600 dark:bg-slate-700 dark:text-brand-400'
+                  ? 'bg-slate-100 text-indigo-600 dark:bg-slate-700 dark:text-indigo-400'
                   : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
               title="List View"
@@ -245,7 +317,7 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
             </h3>
             <button
               onClick={() => setShowNewFolderModal(true)}
-              className="text-xs text-brand-600 hover:underline dark:text-brand-400 font-medium"
+              className="text-xs text-indigo-600 hover:underline dark:text-indigo-400 font-bold cursor-pointer"
             >
               + New Folder
             </button>
@@ -269,9 +341,16 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
       {/* Files Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Files ({totalFilesCount})
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Files ({totalFilesCount})
+            </h3>
+            {selectedFileIds.length > 0 && (
+              <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                {selectedFileIds.length} Selected
+              </span>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -292,6 +371,8 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
               <FileCard
                 key={file.id}
                 file={file}
+                isSelected={selectedFileIds.includes(file.id)}
+                onToggleSelect={handleToggleSelect}
                 onPreview={(f) => setSelectedFileForPreview(f)}
                 onDownload={handleDownload}
                 onShare={(f) => setSelectedFileForShare(f)}
@@ -307,6 +388,9 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
         ) : (
           <FileTable
             files={files}
+            selectedFileIds={selectedFileIds}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
             onPreview={(f) => setSelectedFileForPreview(f)}
             onDownload={handleDownload}
             onShare={(f) => setSelectedFileForShare(f)}
@@ -329,14 +413,14 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage <= 1}
-                className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" /> Previous
               </button>
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage >= totalPages}
-                className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Next <ChevronRight className="h-4 w-4" />
               </button>
@@ -344,6 +428,59 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
           </div>
         )}
       </div>
+
+      {/* Floating Sticky Bulk Actions Bar */}
+      {selectedFileIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl border border-slate-700 bg-slate-900/95 px-5 py-3 text-white shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center gap-2 pr-3 border-r border-slate-700">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-black">
+              {selectedFileIds.length}
+            </span>
+            <span className="text-xs font-bold">Selected</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Move to Trash */}
+            <button
+              onClick={() => setShowBatchTrashDialog(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 active:scale-95 transition cursor-pointer"
+              title="Move selected to Trash"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Move to Trash</span>
+            </button>
+
+            {/* Make Public */}
+            <button
+              onClick={() => handleBatchVisibility('public')}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-slate-700 active:scale-95 transition cursor-pointer"
+              title="Set selected files to Public"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span>Make Public</span>
+            </button>
+
+            {/* Make Private */}
+            <button
+              onClick={() => handleBatchVisibility('private')}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-amber-400 hover:bg-slate-700 active:scale-95 transition cursor-pointer"
+              title="Set selected files to Private"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span>Make Private</span>
+            </button>
+
+            {/* Clear Selection */}
+            <button
+              onClick={() => setSelectedFileIds([])}
+              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+              title="Clear Selection"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modals & Drawers */}
       <FileUploadModal
@@ -415,6 +552,18 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
         }}
       />
 
+      {/* Dialog: Batch Move to Trash */}
+      <ConfirmDialog
+        isOpen={showBatchTrashDialog}
+        title="Move Selected Files to Trash"
+        message={`Are you sure you want to move ${selectedFileIds.length} selected files to the Trash? You can restore them anytime from the Recycle Bin.`}
+        confirmText={batchActionLoading ? "Moving..." : "Move to Trash"}
+        isDanger={true}
+        onClose={() => setShowBatchTrashDialog(false)}
+        onConfirm={handleBatchTrash}
+      />
+
+      {/* Dialog: Single File Delete */}
       <ConfirmDialog
         isOpen={Boolean(fileToDelete)}
         title="Move to Trash"
@@ -425,6 +574,7 @@ export default function FilesPage({ scope = 'all', title = 'Files', onUploadTrig
         onConfirm={handleDeleteFileConfirm}
       />
 
+      {/* Dialog: Folder Delete */}
       <ConfirmDialog
         isOpen={Boolean(folderToDelete)}
         title="Delete Folder"

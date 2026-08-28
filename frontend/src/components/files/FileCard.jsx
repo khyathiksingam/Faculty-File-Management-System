@@ -4,7 +4,7 @@ import {
   FileSpreadsheet, Presentation, Star, MoreVertical,
   Download, Eye, Share2, History, Trash2, Edit3, FolderInput,
   Info, Sparkles, CheckCircle2, AlertCircle, Clock, ExternalLink,
-  Globe, Lock
+  Globe, Lock, Check
 } from 'lucide-react';
 import { formatBytes, formatRelativeTime, getFileCategoryColor } from '../../utils/formatters';
 
@@ -32,6 +32,8 @@ export function getFileIcon(type, className = "h-8 w-8") {
 
 export default function FileCard({
   file,
+  isSelected = false,
+  onToggleSelect,
   onPreview,
   onDownload,
   onShare,
@@ -61,16 +63,37 @@ export default function FileCard({
   const colors = getFileCategoryColor(file.file_type);
 
   return (
-    <div className={`group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-700 ${
-      showMenu ? 'z-40' : 'z-0'
-    }`}>
-      {/* Top Row: File Icon, Badges, Star & Action Menu */}
+    <div className={`group relative flex flex-col justify-between rounded-2xl border bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:bg-slate-900 ${
+      isSelected 
+        ? 'border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/30 dark:border-indigo-500 dark:bg-indigo-950/30' 
+        : 'border-slate-200 hover:border-indigo-300 dark:border-slate-800 dark:hover:border-indigo-700'
+    } ${showMenu ? 'z-40' : 'z-0'}`}>
+      {/* Top Row: File Icon, Selection Checkbox, Badges, Star & Action Menu */}
       <div className="flex items-start justify-between gap-2">
-        <div 
-          onClick={() => !isTrash && onPreview(file)}
-          className={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl border ${colors.bg} transition-transform group-hover:scale-105`}
-        >
-          {getFileIcon(file.file_type, "h-6 w-6")}
+        <div className="flex items-center gap-2.5">
+          {onToggleSelect && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelect(file.id);
+              }}
+              className={`flex h-6 w-6 items-center justify-center rounded-lg border transition-all cursor-pointer ${
+                isSelected 
+                  ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs' 
+                  : 'border-slate-300 bg-white/80 text-transparent hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-800'
+              }`}
+              title={isSelected ? "Deselect File" : "Select File"}
+            >
+              <Check className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          <div 
+            onClick={() => !isTrash && onPreview(file)}
+            className={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl border ${colors.bg} transition-transform group-hover:scale-105`}
+          >
+            {getFileIcon(file.file_type, "h-6 w-6")}
+          </div>
         </div>
 
         <div className="flex items-center gap-1">
