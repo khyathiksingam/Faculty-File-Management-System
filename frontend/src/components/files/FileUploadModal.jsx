@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, File, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { Upload, X, File, CheckCircle2, AlertCircle, Trash2, Globe, Lock } from 'lucide-react';
 import { formatBytes } from '../../utils/formatters';
 import { getToken } from '../../utils/api';
 
 export default function FileUploadModal({ isOpen, onClose, onUploadComplete, currentFolderId, currentDeptId }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [visibility, setVisibility] = useState('public'); // 'public' | 'private'
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState(null); // 'success' | 'error' | null
@@ -57,6 +58,8 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
         formData.append('files', file);
       });
 
+      formData.append('visibility', visibility);
+
       if (currentFolderId) {
         formData.append('folder_id', currentFolderId);
       }
@@ -99,16 +102,17 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
         handleClose();
       }, 800);
     } catch (err) {
+      setErrorMessage(err.message || 'An error occurred during file upload.');
       setUploadStatus('error');
-      setErrorMessage(err.message || 'File upload failed. Please try again.');
-      setProgress(0);
-    } finally {
       setUploading(false);
+      setProgress(0);
     }
   };
 
   const handleClose = () => {
+    if (uploading) return;
     setSelectedFiles([]);
+    setVisibility('public');
     setUploading(false);
     setProgress(0);
     setUploadStatus(null);
@@ -117,35 +121,41 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
   };
 
   return (
-    <div 
-      onClick={(e) => { if (e.target === e.currentTarget && !uploading) handleClose(); }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md overflow-y-auto"
-    >
-      <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-left transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+        onClick={handleClose}
+      />
+
+      {/* Modal Card */}
+      <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl transition-all dark:border-slate-800 dark:bg-slate-900 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
           <div>
-            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Upload Files</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              Upload Documents
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Files will be stored securely and processed with OCR indexing.
+              Upload syllabi, exam papers, research files, or media (Up to 1 GB)
             </p>
           </div>
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Dropzone Area */}
+        {/* Dropzone */}
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition ${
+          onClick={() => fileInputRef.current && fileInputRef.current.click()}
+          className={`mt-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
             isDragOver
               ? 'border-indigo-500 bg-indigo-50/60 dark:border-indigo-500 dark:bg-indigo-950/30'
               : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50/60 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-slate-850'
@@ -169,9 +179,69 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
           </p>
         </div>
 
+        {/* Visibility Permission Selector */}
+        <div className="mt-4 space-y-1.5">
+          <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            Document Privacy & Visibility:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Public Option */}
+            <div
+              onClick={() => !uploading && setVisibility('public')}
+              className={`cursor-pointer rounded-2xl border p-3 transition-all ${
+                visibility === 'public'
+                  ? 'border-indigo-600 bg-indigo-50/80 shadow-xs ring-2 ring-indigo-500/40 dark:border-indigo-500 dark:bg-indigo-950/50'
+                  : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 dark:border-slate-800 dark:bg-slate-850/60 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                  visibility === 'public' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}>
+                  <Globe className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                    Public (Shared)
+                  </div>
+                  <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                    Visible to all college faculty
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Private Option */}
+            <div
+              onClick={() => !uploading && setVisibility('private')}
+              className={`cursor-pointer rounded-2xl border p-3 transition-all ${
+                visibility === 'private'
+                  ? 'border-amber-500 bg-amber-50/80 shadow-xs ring-2 ring-amber-500/40 dark:border-amber-500 dark:bg-amber-950/50'
+                  : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 dark:border-slate-800 dark:bg-slate-850/60 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                  visibility === 'private' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}>
+                  <Lock className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                    Private (Confidential)
+                  </div>
+                  <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                    Visible only to you & Admin
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Selected Files List */}
         {selectedFiles.length > 0 && (
-          <div className="mt-4 max-h-44 space-y-2 overflow-y-auto pr-1">
+          <div className="mt-4 max-h-40 space-y-2 overflow-y-auto pr-1">
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Selected Files ({selectedFiles.length})
             </div>

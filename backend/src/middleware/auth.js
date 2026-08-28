@@ -92,8 +92,20 @@ async function checkFileAccess(fileId, user, requiredPermission = 'view') {
 
   if (!file) return false;
 
-  // Owner has full control
+  // Owner has full control over their own file (both public and private)
   if (file.owner_id === user.id) return true;
+
+  // If file is marked private and user is NOT owner (and NOT admin), deny access
+  if (file.visibility === 'private') {
+    return false;
+  }
+
+  // Public files: any authenticated faculty in the college/department has view & download access
+  if (file.visibility === 'public' || !file.visibility) {
+    if (requiredPermission === 'view' || requiredPermission === 'download') {
+      return true;
+    }
+  }
 
   // HOD has access to files in their department
   if (user.role_name === 'hod' && user.department_id && file.department_id === user.department_id) {
@@ -124,20 +136,6 @@ async function checkFileAccess(fileId, user, requiredPermission = 'view') {
       if (requiredPermission === 'download' && ['view_download', 'edit'].includes(deptShare.permission)) return true;
       if (requiredPermission === 'edit' && deptShare.permission === 'edit') return true;
     }
-  }
-
-  // Check custom file_permissions table
-  const customPerm = await dbHelper.get(`
-    SELECT permission_type FROM file_permissions
-    WHERE file_id = ? AND user_id = ?
-  `, [fileId, user.id]);
-
-  if (customPerm) {
-    if (customPerm.permission_type === 'full') return true;
-    if (requiredPermission === 'view') return true;
-    if (requiredPermission === 'download' && ['download', 'edit', 'delete'].includes(customPerm.permission_type)) return true;
-    if (requiredPermission === 'edit' && customPerm.permission_type === 'edit') return true;
-    if (requiredPermission === 'delete' && customPerm.permission_type === 'delete') return true;
   }
 
   return false;

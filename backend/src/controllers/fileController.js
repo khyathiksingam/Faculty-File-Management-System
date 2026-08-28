@@ -22,8 +22,9 @@ const fileController = {
   async uploadFiles(req, res) {
     try {
       const files = req.files || (req.file ? [req.file] : []);
-      const { folder_id, department_id } = req.body;
+      const { folder_id, department_id, visibility } = req.body;
       const user = req.user;
+      const fileVisibility = visibility === 'private' ? 'private' : 'public';
 
       if (!files || files.length === 0) {
         return res.status(400).json({ error: 'No files were provided for upload.' });
@@ -52,8 +53,8 @@ const fileController = {
           INSERT INTO files (
             name, original_name, file_type, mime_type, size,
             storage_path, folder_id, owner_id, department_id,
-            version, ocr_status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending')
+            version, ocr_status, visibility
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?)
         `, [
           originalName,
           originalName,
@@ -63,7 +64,8 @@ const fileController = {
           storedFilename,
           (folder_id && folder_id !== 'null' && folder_id !== '') ? folder_id : null,
           user.id,
-          targetDeptId
+          targetDeptId,
+          fileVisibility
         ]);
 
         const fileId = result.lastID;
@@ -138,6 +140,7 @@ const fileController = {
       let sql = `
         SELECT f.id, f.name, f.original_name, f.file_type, f.mime_type, f.size,
                f.storage_path, f.folder_id, f.owner_id, f.department_id, f.drive_link,
+               COALESCE(f.visibility, 'public') as visibility,
                f.version, f.ocr_status, f.created_at, f.updated_at, f.deleted_at,
                COALESCE(u.full_name, 'Potta Devika') as owner_name, u.username as owner_username,
                d.name as department_name, d.code as department_code,
@@ -187,21 +190,18 @@ const fileController = {
         } else {
           // General file browsing RBAC:
           if (user.role_name === 'faculty') {
-            if (folder_id) {
-              // inside a folder
-            } else {
-              sql += ` AND (
-                f.owner_id = ? 
-                OR f.department_id = ?
-                OR EXISTS(SELECT 1 FROM shared_files sf WHERE sf.file_id = f.id AND (sf.shared_with_user = ? OR sf.shared_with_department = ?))
-              )`;
-              params.push(user.id, user.department_id || -1, user.id, user.department_id || -1);
-            }
+            sql += ` AND (
+              f.owner_id = ? 
+              OR (COALESCE(f.visibility, 'public') = 'public' AND (f.department_id = ? OR f.department_id IS NULL))
+              OR EXISTS(SELECT 1 FROM shared_files sf WHERE sf.file_id = f.id AND (sf.shared_with_user = ? OR sf.shared_with_department = ?))
+            )`;
+            params.push(user.id, user.department_id || -1, user.id, user.department_id || -1);
           } else if (user.role_name === 'hod') {
             if (!folder_id && !department_id) {
               sql += ` AND (
                 f.department_id = ? 
                 OR f.owner_id = ?
+                OR (COALESCE(f.visibility, 'public') = 'public')
                 OR EXISTS(SELECT 1 FROM shared_files sf WHERE sf.file_id = f.id AND sf.shared_with_user = ?)
               )`;
               params.push(user.department_id || -1, user.id, user.id);
@@ -681,6 +681,36 @@ const fileController = {
     } catch (error) {
       console.error('Empty trash error:', error);
       res.status(500).json({ error: 'Failed to empty trash.' });
+    }
+  },
+
+  async toggleVisibility(req, res) {
+    try {
+      const { id } = req.params;
+      const { visibility } = req.body;
+      const user = req.user;
+
+      const file = await dbHelper.get("SELECT * FROM files WHERE id = ?", [id]);
+      if (!file) {
+        return res.status(404).json({ error: 'File not found.' });
+      }
+
+      if (user.role_name !== 'admin' && file.owner_id !== user.id) {
+        return res.status(403).json({ error: 'You do not have permission to change visibility for this file.' });
+      }
+
+      const newVisibility = visibility === 'private' ? 'private' : 'public';
+      await dbHelper.run("UPDATE files SET visibility = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [newVisibility, id]);
+
+      await dbHelper.run(`
+        INSERT INTO activity_logs (user_id, action, file_id, department_id, metadata)
+        VALUES (?, 'File Visibility Changed', ?, ?, ?)
+      `, [user.id, id, file.department_id, JSON.stringify({ visibility: newVisibility, name: file.name })]);
+
+      res.json({ success: true, visibility: newVisibility, message: `File is now ${newVisibility}.` });
+    } catch (error) {
+      console.error('Toggle visibility error:', error);
+      res.status(500).json({ error: 'Failed to update file visibility.' });
     }
   }
 };

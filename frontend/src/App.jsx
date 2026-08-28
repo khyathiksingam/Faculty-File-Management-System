@@ -24,6 +24,8 @@ import ProfilePage from './pages/ProfilePage';
 import FileUploadModal from './components/files/FileUploadModal';
 import NewFolderModal from './components/files/NewFolderModal';
 import FilePreviewModal from './components/files/FilePreviewModal';
+import FileShareModal from './components/files/FileShareModal';
+import { getToken } from './utils/api';
 
 function MainApp() {
   const { user, loading, isAdmin, isHOD } = useAuth();
@@ -36,6 +38,18 @@ function MainApp() {
   const [globalUploadOpen, setGlobalUploadOpen] = useState(false);
   const [globalNewFolderOpen, setGlobalNewFolderOpen] = useState(false);
   const [globalPreviewFile, setGlobalPreviewFile] = useState(null);
+  const [globalShareFile, setGlobalShareFile] = useState(null);
+
+  const handleGlobalDownload = (file) => {
+    if (!file) return;
+    const token = getToken();
+    const link = document.createElement('a');
+    link.href = `/api/files/${file.id}/download?token=${token || ''}`;
+    link.download = file.name || file.original_name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   useEffect(() => {
     if (user) {
@@ -205,6 +219,17 @@ function MainApp() {
         isOpen={Boolean(globalPreviewFile)}
         file={globalPreviewFile}
         onClose={() => setGlobalPreviewFile(null)}
+        onShare={(file) => setGlobalShareFile(file)}
+        onDownload={handleGlobalDownload}
+      />
+
+      <FileShareModal
+        isOpen={Boolean(globalShareFile)}
+        file={globalShareFile}
+        onClose={() => setGlobalShareFile(null)}
+        onShareUpdated={() => {
+          loadStorageStats();
+        }}
       />
     </div>
   );

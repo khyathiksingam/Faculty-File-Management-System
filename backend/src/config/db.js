@@ -103,6 +103,7 @@ function createSchema() {
       extracted_text TEXT DEFAULT '',
       is_favorite INTEGER DEFAULT 0,
       drive_link TEXT DEFAULT '',
+      visibility TEXT DEFAULT 'public' CHECK(visibility IN ('public', 'private')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       deleted_at DATETIME DEFAULT NULL,
@@ -218,6 +219,7 @@ function createSchema() {
 
   try { db.run("ALTER TABLE folders ADD COLUMN drive_link TEXT DEFAULT ''"); } catch (e) {}
   try { db.run("ALTER TABLE files ADD COLUMN drive_link TEXT DEFAULT ''"); } catch (e) {}
+  try { db.run("ALTER TABLE files ADD COLUMN visibility TEXT DEFAULT 'public'"); } catch (e) {}
 }
 
 function sanitizeParams(params = []) {

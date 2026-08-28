@@ -3,7 +3,8 @@ import {
   FileText, Image as ImageIcon, Video, Music, Archive,
   FileSpreadsheet, Presentation, Star, MoreVertical,
   Download, Eye, Share2, History, Trash2, Edit3, FolderInput,
-  Info, Sparkles, CheckCircle2, AlertCircle, Clock, ExternalLink
+  Info, Sparkles, CheckCircle2, AlertCircle, Clock, ExternalLink,
+  Globe, Lock
 } from 'lucide-react';
 import { formatBytes, formatRelativeTime, getFileCategoryColor } from '../../utils/formatters';
 
@@ -88,11 +89,30 @@ export default function FileCard({
             </a>
           )}
 
+          {/* Public / Private Badge */}
+          {file.visibility === 'private' ? (
+            <span
+              title="Private file (Visible only to you & Admin)"
+              className="flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200/70 dark:border-amber-800/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300"
+            >
+              <Lock className="h-2.5 w-2.5" />
+              <span>Private</span>
+            </span>
+          ) : (
+            <span
+              title="Public file (Visible to all college faculty)"
+              className="flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/80 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300"
+            >
+              <Globe className="h-2.5 w-2.5" />
+              <span>Public</span>
+            </span>
+          )}
+
           {/* OCR Status Badge */}
           {file.ocr_status === 'completed' && (
             <span 
               title="OCR Indexed: Text inside document is searchable" 
-              className="flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+              className="flex items-center gap-1 rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
             >
               <Sparkles className="h-2.5 w-2.5" />
               OCR

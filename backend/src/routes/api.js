@@ -67,6 +67,7 @@ router.get('/files/:id/preview', authenticate, fileController.previewFile);
 router.put('/files/:id/rename', authenticate, fileController.renameFile);
 router.put('/files/:id/move', authenticate, fileController.moveFile);
 router.post('/files/:id/star', authenticate, fileController.toggleStar);
+router.patch('/files/:id/visibility', authenticate, fileController.toggleVisibility);
 router.delete('/files/:id', authenticate, fileController.deleteFile); // soft delete to trash
 router.post('/files/:id/restore', authenticate, fileController.restoreFile);
 router.delete('/files/:id/permanent', authenticate, fileController.permanentlyDeleteFile);

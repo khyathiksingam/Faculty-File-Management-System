@@ -122,11 +122,12 @@ const analyticsController = {
 
         const recentFiles = await dbHelper.all(`
           SELECT f.id, f.name, f.file_type, f.size, f.created_at, f.version, f.drive_link,
+                 COALESCE(f.visibility, 'public') as visibility,
                  COALESCE(u.full_name, 'Potta Devika') as owner_name,
                  EXISTS(SELECT 1 FROM favorites fav WHERE fav.file_id = f.id AND fav.user_id = ?) as is_starred
           FROM files f
           LEFT JOIN users u ON f.owner_id = u.id
-          WHERE (f.owner_id = ? OR f.department_id = ?) AND f.deleted_at IS NULL
+          WHERE (f.owner_id = ? OR (COALESCE(f.visibility, 'public') = 'public' AND (f.department_id = ? OR f.department_id IS NULL))) AND f.deleted_at IS NULL
           ORDER BY f.created_at DESC
           LIMIT 8
         `, [user.id, user.id, user.department_id || -1]);

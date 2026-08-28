@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Download, Share2, ZoomIn, ZoomOut, RotateCw, 
   FileText, Sparkles, FileSpreadsheet, Eye, Info, Check, 
-  ExternalLink, Maximize2, Minimize2, Table, Layers, Copy, FileCode
+  ExternalLink, Maximize2, Minimize2, Table, Layers, Copy, FileCode,
+  Globe, Lock, AlertCircle, RefreshCw
 } from 'lucide-react';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
@@ -31,6 +32,9 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
   const [textLoading, setTextLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Image load error state
+  const [imgError, setImgError] = useState(false);
+
   useEffect(() => {
     setZoom(100);
     setRotation(0);
@@ -41,6 +45,7 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
     setExcelError('');
     setTextContent('');
     setCopied(false);
+    setImgError(false);
 
     if (!file) return;
 
@@ -78,6 +83,25 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
   const isAudio = file.file_type === 'audio' || file.mime_type?.startsWith('audio/') || lowerName.endsWith('.mp3') || lowerName.endsWith('.wav');
   const isText = isDocx ? false : (file.mime_type?.startsWith('text/') || lowerName.endsWith('.txt') || lowerName.endsWith('.md') || lowerName.endsWith('.json') || lowerName.endsWith('.js') || lowerName.endsWith('.py') || lowerName.endsWith('.sql'));
 
+  const handleDownloadClick = () => {
+    if (onDownload) {
+      onDownload(file);
+    } else {
+      const link = document.createElement('a');
+      link.href = `/api/files/${file.id}/download?token=${token || ''}`;
+      link.download = file.name || file.original_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleShareClick = () => {
+    if (onShare) {
+      onShare(file);
+    }
+  };
+
   const loadDocxPreview = async () => {
     setDocxLoading(true);
     setDocxError('');
@@ -105,14 +129,19 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
       const arrayBuffer = await res.arrayBuffer();
       
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-      const sheets = workbook.SheetNames.map(name => {
-        const worksheet = workbook.Sheets[name];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-        return { name, data: jsonData };
+      const sheetDataList = workbook.SheetNames.map(sheetName => {
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        return {
+          name: sheetName,
+          data: jsonData
+        };
       });
-      setExcelSheets(sheets);
+
+      setExcelSheets(sheetDataList);
+      setActiveSheetIndex(0);
     } catch (e) {
-      console.warn('Excel parse error:', e);
+      console.warn('Excel conversion error:', e);
       setExcelError('Could not parse spreadsheet data.');
     } finally {
       setExcelLoading(false);
@@ -158,6 +187,15 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
                 <h3 className="truncate font-extrabold text-sm sm:text-base text-slate-900 dark:text-slate-100" title={file.name}>
                   {file.name}
                 </h3>
+                {file.visibility === 'private' ? (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    <Lock className="h-2.5 w-2.5" /> Private
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <Globe className="h-2.5 w-2.5" /> Public
+                  </span>
+                )}
                 {isDocx && (
                   <span className="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                     Word Doc
@@ -199,79 +237,82 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
                 onClick={() => setActiveTab('ocr')}
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition cursor-pointer ${
                   activeTab === 'ocr'
-                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                    ? 'bg-white text-indigo-900 shadow-sm dark:bg-slate-700 dark:text-indigo-300'
                     : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 }`}
               >
-                <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>OCR Text</span>
+                <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+                <span>Extracted Text</span>
               </button>
             )}
           </div>
 
-          {/* Action Toolbar */}
+          {/* Right Action Tools */}
           <div className="flex items-center gap-2">
+            {/* Direct Google Drive/Docs Link */}
+            {file.drive_link && (
+              <a
+                href={file.drive_link}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>Open in Drive</span>
+              </a>
+            )}
+
+            {/* Image zoom / rotate toolbar */}
             {isImage && activeTab === 'preview' && (
-              <div className="flex items-center gap-1 border-r border-slate-200 pr-2 dark:border-slate-700">
+              <div className="hidden sm:flex items-center gap-1 border-r border-slate-200 pr-2 mr-1 dark:border-slate-800">
                 <button
                   onClick={handleZoomOut}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
                   title="Zoom Out"
                 >
                   <ZoomOut className="h-4 w-4" />
                 </button>
-                <span className="text-xs font-medium text-slate-500 min-w-[36px] text-center">{zoom}%</span>
+                <span className="text-xs font-mono text-slate-500 px-1">{zoom}%</span>
                 <button
                   onClick={handleZoomIn}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
                   title="Zoom In"
                 >
                   <ZoomIn className="h-4 w-4" />
                 </button>
                 <button
                   onClick={handleRotate}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
-                  title="Rotate"
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+                  title="Rotate 90°"
                 >
                   <RotateCw className="h-4 w-4" />
                 </button>
               </div>
             )}
 
-            {/* Google Docs / Drive Cloud Button */}
-            {file.drive_link && (
-              <a
-                href={file.drive_link}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Open in</span> Drive
-              </a>
-            )}
-
             {/* Fullscreen Toggle */}
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Preview"}
+              className="rounded-xl border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
             >
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
 
             {/* Share */}
-            <button
-              onClick={() => onShare && onShare(file)}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 cursor-pointer"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Share</span>
-            </button>
+            {onShare && (
+              <button
+                onClick={handleShareClick}
+                className="rounded-xl border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+                title="Share Document"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+            )}
 
             {/* Download */}
             <button
-              onClick={() => onDownload && onDownload(file)}
+              onClick={handleDownloadClick}
               className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-indigo-500/20 hover:from-blue-800 hover:to-indigo-700 cursor-pointer"
             >
               <Download className="h-3.5 w-3.5" />
@@ -338,83 +379,52 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
                     <div 
                       className="prose dark:prose-invert max-w-none text-slate-900 dark:text-slate-100 text-sm leading-relaxed 
                         [&_h1]:text-2xl [&_h1]:font-extrabold [&_h1]:mb-4 [&_h1]:text-slate-900 dark:[&_h1]:text-white
-                        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-slate-800 dark:[&_h2]:text-slate-200
-                        [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-2
-                        [&_p]:mb-3 [&_p]:text-slate-700 dark:[&_p]:text-slate-300
-                        [&_table]:w-full [&_table]:border-collapse [&_table]:my-4 [&_table]:text-xs
-                        [&_th]:border [&_th]:border-slate-300 [&_th]:bg-slate-100 [&_th]:p-2 [&_th]:font-bold dark:[&_th]:bg-slate-800 dark:[&_th]:border-slate-700
-                        [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 dark:[&_td]:border-slate-800
-                        [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3
-                        [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3"
+                        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
+                        [&_p]:my-2.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
+                        [&_table]:w-full [&_table]:border-collapse [&_table]:my-4
+                        [&_td]:border [&_td]:border-slate-300 dark:[&_td]:border-slate-700 [&_td]:p-2
+                        [&_th]:border [&_th]:border-slate-300 dark:[&_th]:border-slate-700 [&_th]:p-2 [&_th]:bg-slate-100 dark:[&_th]:bg-slate-800"
                       dangerouslySetInnerHTML={{ __html: docxHtml }}
                     />
                   </div>
-                ) : file.extracted_text ? (
-                  /* Fallback to clean document layout from extracted text */
-                  <div className="h-full w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 sm:p-12 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-6 dark:border-slate-800">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                        <span className="font-bold text-xs uppercase tracking-wider text-slate-500">Microsoft Word Document</span>
-                      </div>
-                      <button
-                        onClick={() => handleCopyText(file.extracted_text)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
-                        <Copy className="h-3 w-3" />
-                        <span>Copy Text</span>
-                      </button>
-                    </div>
-                    <div className="whitespace-pre-wrap font-sans text-sm sm:text-base leading-relaxed text-slate-800 dark:text-slate-200">
-                      {file.extracted_text}
-                    </div>
-                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-lg dark:border-slate-800 dark:bg-slate-900 max-w-md">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/70 dark:text-blue-400">
-                      <FileText className="h-8 w-8" />
-                    </div>
-                    <h4 className="mt-4 font-bold text-base text-slate-800 dark:text-slate-200">
-                      {file.name}
-                    </h4>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Microsoft Word Document
-                    </p>
-                    <div className="mt-5 flex items-center gap-2">
-                      <button
-                        onClick={() => onDownload && onDownload(file)}
-                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:from-blue-800 hover:to-indigo-700 cursor-pointer"
-                      >
-                        <Download className="h-4 w-4" />
-                        <span>Download & Open in Word</span>
-                      </button>
-                    </div>
+                    <FileText className="h-12 w-12 text-blue-500" />
+                    <h4 className="mt-3 font-bold text-base">{file.name}</h4>
+                    <p className="mt-1 text-xs text-slate-400">Microsoft Word Document</p>
+                    <button
+                      onClick={handleDownloadClick}
+                      className="mt-4 flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 cursor-pointer"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download Document</span>
+                    </button>
                   </div>
                 )
               ) : isExcel ? (
-                /* 2. EXCEL SPREADSHEET (.XLSX, .XLS, .CSV) LIVE INTERACTIVE TABLE */
+                /* 2. EXCEL SPREADSHEET (.XLSX, .XLS, .CSV) INTERACTIVE TABULAR GRID */
                 excelLoading ? (
                   <div className="flex flex-col items-center gap-3 text-slate-400 animate-pulse">
                     <FileSpreadsheet className="h-10 w-10 text-emerald-500" />
-                    <p className="text-xs font-bold">Parsing Excel Workbook...</p>
+                    <p className="text-xs font-bold">Parsing Spreadsheet...</p>
                   </div>
                 ) : excelSheets.length > 0 ? (
-                  <div className="flex h-full w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+                  <div className="flex h-full w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 overflow-hidden text-left">
                     {/* Sheet Tabs */}
                     {excelSheets.length > 1 && (
                       <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-850 overflow-x-auto">
-                        {excelSheets.map((sheet, idx) => (
+                        <Layers className="h-4 w-4 text-slate-400 mr-2" />
+                        {excelSheets.map((sheet, sIdx) => (
                           <button
-                            key={idx}
-                            onClick={() => setActiveSheetIndex(idx)}
-                            className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition cursor-pointer ${
-                              activeSheetIndex === idx
-                                ? 'bg-emerald-600 text-white shadow-sm'
-                                : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800'
+                            key={sIdx}
+                            onClick={() => setActiveSheetIndex(sIdx)}
+                            className={`rounded-lg px-3 py-1 text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                              activeSheetIndex === sIdx
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-800'
                             }`}
                           >
-                            <Table className="h-3 w-3" />
-                            <span>{sheet.name}</span>
+                            {sheet.name}
                           </button>
                         ))}
                       </div>
@@ -456,8 +466,8 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
                     <h4 className="mt-3 font-bold text-base">{file.name}</h4>
                     <p className="mt-1 text-xs text-slate-400">Spreadsheet Document</p>
                     <button
-                      onClick={() => onDownload && onDownload(file)}
-                      className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700"
+                      onClick={handleDownloadClick}
+                      className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 cursor-pointer"
                     >
                       <Download className="h-4 w-4" />
                       <span>Download Spreadsheet</span>
@@ -474,15 +484,35 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
               ) : isImage ? (
                 /* 4. IMAGE HD VIEWER */
                 <div className="overflow-auto max-h-full max-w-full flex items-center justify-center p-4">
-                  <img
-                    src={previewUrl}
-                    alt={file.name}
-                    style={{
-                      transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-                      transition: 'transform 0.2s ease-in-out'
-                    }}
-                    className="max-h-[78vh] max-w-full rounded-2xl object-contain shadow-2xl ring-1 ring-black/10"
-                  />
+                  {!imgError ? (
+                    <img
+                      src={previewUrl}
+                      alt={file.name}
+                      onError={() => setImgError(true)}
+                      style={{
+                        transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
+                        transition: 'transform 0.2s ease-in-out'
+                      }}
+                      className="max-h-[78vh] max-w-full rounded-2xl object-contain shadow-2xl ring-1 ring-black/10"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900 max-w-md">
+                      <AlertCircle className="h-12 w-12 text-amber-500 mb-2" />
+                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                        Image Preview Restricted or Processing
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 mb-4">
+                        This image may be private or saved in a secure departmental format.
+                      </p>
+                      <button
+                        onClick={handleDownloadClick}
+                        className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-700 cursor-pointer"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span>Download Image</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : isVideo ? (
                 /* 5. HTML5 VIDEO PLAYER */
@@ -520,31 +550,32 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
                       <span>{copied ? 'Copied' : 'Copy Content'}</span>
                     </button>
                   </div>
-                  <pre className="flex-1 overflow-auto p-4 sm:p-6 font-mono text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200">
-                    {textLoading ? 'Loading document text...' : textContent}
+                  <pre className="flex-1 overflow-auto p-4 font-mono text-xs text-slate-800 dark:text-slate-200 leading-relaxed select-text">
+                    {textLoading ? 'Loading content...' : textContent || 'Empty document.'}
                   </pre>
                 </div>
               ) : (
-                /* 8. GENERAL GENERIC FALLBACK */
-                <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-lg dark:border-slate-800 dark:bg-slate-900 max-w-md">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                    <FileText className="h-8 w-8" />
+                /* 8. ARCHIVE / GENERIC FILE DOWNLOAD */
+                <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900 max-w-md">
+                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-orange-600 dark:bg-orange-950/70 dark:text-orange-400 shadow-inner">
+                    <FileText className="h-10 w-10" />
                   </div>
-                  <h4 className="mt-4 font-bold text-base text-slate-800 dark:text-slate-200">
+                  <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
                     {file.name}
                   </h4>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Official College Document
+                  <p className="mt-1 text-xs text-slate-400">
+                    {formatBytes(file.size)} • {file.mime_type || 'Binary Package / Archive'}
                   </p>
-                  <div className="mt-5 flex items-center gap-2">
-                    <button
-                      onClick={() => onDownload && onDownload(file)}
-                      className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:from-blue-800 hover:to-indigo-700 cursor-pointer"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>Download File</span>
-                    </button>
-                  </div>
+                  <p className="mt-2 text-xs text-slate-500 max-w-xs">
+                    This file format is packaged for download. Click below to save it to your device.
+                  </p>
+                  <button
+                    onClick={handleDownloadClick}
+                    className="mt-6 flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 hover:from-blue-800 hover:to-indigo-700 cursor-pointer active:scale-95"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Download File ({formatBytes(file.size)})</span>
+                  </button>
                 </div>
               )}
             </div>

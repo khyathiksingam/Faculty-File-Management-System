@@ -59,7 +59,7 @@ const searchController = {
       if (user.role_name === 'faculty') {
         sql += ` AND (
           f.owner_id = ? 
-          OR f.department_id = ?
+          OR (COALESCE(f.visibility, 'public') = 'public' AND (f.department_id = ? OR f.department_id IS NULL))
           OR EXISTS(SELECT 1 FROM shared_files sf WHERE sf.file_id = f.id AND (sf.shared_with_user = ? OR sf.shared_with_department = ?))
         )`;
         params.push(user.id, user.department_id || -1, user.id, user.department_id || -1);
@@ -68,6 +68,7 @@ const searchController = {
           sql += ` AND (
             f.department_id = ? 
             OR f.owner_id = ?
+            OR (COALESCE(f.visibility, 'public') = 'public')
             OR EXISTS(SELECT 1 FROM shared_files sf WHERE sf.file_id = f.id AND sf.shared_with_user = ?)
           )`;
           params.push(user.department_id || -1, user.id, user.id);
