@@ -19,7 +19,7 @@ async function seed() {
         'Faculty File Management System', 
         '/logo.png', 
         '/logo.png', 
-        100, 
+        1024, 
         'pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,jpg,jpeg,png,gif,svg,mp4,mov,avi,mp3,wav,zip,rar'
       )
     `);

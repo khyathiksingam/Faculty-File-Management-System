@@ -38,6 +38,15 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
   const handleUploadSubmit = async () => {
     if (selectedFiles.length === 0) return;
 
+    // Check individual file size against 1GB limit (1024 * 1024 * 1024)
+    const MAX_SIZE = 1024 * 1024 * 1024;
+    const oversizedFile = selectedFiles.find(f => f.size > MAX_SIZE);
+    if (oversizedFile) {
+      setErrorMessage(`File "${oversizedFile.name}" exceeds the maximum upload limit of 1 GB.`);
+      setUploadStatus('error');
+      return;
+    }
+
     setUploading(true);
     setProgress(15);
     setErrorMessage('');
@@ -55,7 +64,7 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
         formData.append('department_id', currentDeptId);
       }
 
-      // Simulate step progress for large uploads
+      // Progress animation
       const progressTimer = setInterval(() => {
         setProgress(prev => {
           if (prev >= 85) {
@@ -88,7 +97,7 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
       setTimeout(() => {
         onUploadComplete && onUploadComplete(data.files);
         handleClose();
-      }, 900);
+      }, 800);
     } catch (err) {
       setUploadStatus('error');
       setErrorMessage(err.message || 'File upload failed. Please try again.');
@@ -108,8 +117,11 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget && !uploading) handleClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md overflow-y-auto"
+    >
+      <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-left transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
           <div>
@@ -121,7 +133,7 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
@@ -135,8 +147,8 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
           onClick={() => fileInputRef.current?.click()}
           className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition ${
             isDragOver
-              ? 'border-brand-500 bg-brand-50/60 dark:border-brand-500 dark:bg-brand-950/30'
-              : 'border-slate-300 hover:border-brand-400 hover:bg-slate-50/60 dark:border-slate-700 dark:hover:border-brand-600 dark:hover:bg-slate-850'
+              ? 'border-indigo-500 bg-indigo-50/60 dark:border-indigo-500 dark:bg-indigo-950/30'
+              : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50/60 dark:border-slate-700 dark:hover:border-indigo-600 dark:hover:bg-slate-850'
           }`}
         >
           <input
@@ -146,14 +158,14 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
             onChange={handleFileSelection}
             className="hidden"
           />
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-brand-600 dark:bg-brand-950 dark:text-brand-400">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/70 dark:text-indigo-400">
             <Upload className="h-7 w-7" />
           </div>
           <p className="mt-3 font-semibold text-sm text-slate-800 dark:text-slate-200">
-            Drag and drop files here, or <span className="text-brand-600 dark:text-brand-400 underline">Browse</span>
+            Drag and drop files here, or <span className="text-indigo-600 dark:text-indigo-400 underline font-bold">Browse</span>
           </p>
-          <p className="mt-1 text-xs text-slate-400">
-            PDF, DOCX, XLSX, PPTX, JPG, PNG, CSV, MP4, MP3, ZIP up to 100MB
+          <p className="mt-1 text-xs font-medium text-slate-400 dark:text-slate-500">
+            PDF, DOCX, XLSX, PPTX, JPG, PNG, CSV, MP4, MP3, ZIP up to 1 GB
           </p>
         </div>
 
@@ -180,7 +192,7 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
                 {!uploading && (
                   <button
                     onClick={(e) => { e.stopPropagation(); removeSelectedFile(idx); }}
-                    className="text-slate-400 hover:text-rose-500"
+                    className="text-slate-400 hover:text-rose-500 cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -199,44 +211,44 @@ export default function FileUploadModal({ isOpen, onClose, onUploadComplete, cur
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
               <div
-                className="h-full bg-gradient-to-r from-brand-600 to-indigo-600 transition-all duration-300 rounded-full"
+                className="h-full bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
         )}
 
-        {/* Status messages */}
+        {/* Status Messages */}
         {uploadStatus === 'success' && (
           <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            ✓ File(s) uploaded successfully & indexed for OCR search!
+            Upload complete! Processing files...
           </div>
         )}
 
         {uploadStatus === 'error' && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
-            <AlertCircle className="h-4 w-4 text-rose-600" />
+          <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+            <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />
             {errorMessage}
           </div>
         )}
 
-        {/* Modal Actions */}
+        {/* Footer Actions */}
         <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleUploadSubmit}
-            disabled={uploading || selectedFiles.length === 0}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/20 hover:from-blue-800 hover:to-indigo-700 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            disabled={selectedFiles.length === 0 || uploading}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-indigo-500/25 hover:from-blue-800 hover:to-indigo-700 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
-            <Upload className="h-4 w-4 stroke-[2.5]" />
-            <span>{uploading ? `Uploading (${progress}%)...` : `Upload ${selectedFiles.length > 0 ? selectedFiles.length : ''} File(s)`}</span>
+            <Upload className="h-4 w-4" />
+            <span>{uploading ? 'Uploading...' : `Upload ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`}</span>
           </button>
         </div>
       </div>
