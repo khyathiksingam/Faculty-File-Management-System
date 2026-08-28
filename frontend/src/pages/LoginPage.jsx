@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, Lock, User, Eye, EyeOff, ArrowRight, ShieldCheck, 
   Mail, KeyRound, RotateCcw, CheckCircle2, AlertCircle, ArrowLeft,
-  Sparkles
+  Sparkles, Check, UserCheck, PlusCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
@@ -10,7 +10,7 @@ import { api } from '../utils/api';
 export default function LoginPage() {
   const { login, loginWithGoogle, signup, collegeSettings } = useAuth();
 
-  // Mode: 'login' | 'signup' | 'forgot_password' | 'otp_verify'
+  // Mode: 'login' | 'signup' | 'forgot_password' | 'otp_verify' | 'google_access'
   const [mode, setMode] = useState('login');
 
   // Login form state
@@ -23,6 +23,10 @@ export default function LoginPage() {
   const [signupUsername, setSignupUsername] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+
+  // Google Direct Access state
+  const [googleEmail, setGoogleEmail] = useState('lingampallisaivarsha@gmail.com');
+  const [googleName, setGoogleName] = useState('Lingampalli Sai Varsha');
 
   // Forgot password & OTP state
   const [resetEmailOrUser, setResetEmailOrUser] = useState('');
@@ -37,70 +41,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-
-  // Initialize Google Identity Services (GSI) One-Tap on mount
-  useEffect(() => {
-    /* global google */
-    if (window.google?.accounts?.id) {
-      try {
-        google.accounts.id.initialize({
-          client_id: "532296768369-samplegoogleclientid.apps.googleusercontent.com", // standard fallback
-          callback: handleGoogleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true
-        });
-        google.accounts.id.renderButton(
-          document.getElementById("gsi-button-container"),
-          { theme: "outline", size: "large", width: "100%", text: "continue_with" }
-        );
-      } catch (e) {
-        // ignore GSI init if blocked by adblock
-      }
-    }
-  }, [mode]);
-
-  const handleGoogleCredentialResponse = async (response) => {
-    if (response?.credential) {
-      setLoading(true);
-      clearMessages();
-      try {
-        await loginWithGoogle({ credential: response.credential });
-      } catch (err) {
-        setError(err.message || 'Google One-Tap sign in failed.');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  // Direct 1-Click Instant Google Sign-In
-  const handleOneTapGoogleLogin = async () => {
-    setLoading(true);
-    clearMessages();
-    try {
-      if (window.google?.accounts?.id) {
-        google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // Fallback direct 1-click login
-            loginWithGoogle({
-              email: username.includes('@') ? username : 'p.devika@vnrvjiet.in',
-              full_name: 'Potta Devika'
-            });
-          }
-        });
-      } else {
-        // Direct 1-tap instant login
-        await loginWithGoogle({
-          email: username.includes('@') ? username : 'p.devika@vnrvjiet.in',
-          full_name: 'Potta Devika'
-        });
-      }
-    } catch (err) {
-      setError(err.message || 'Google Sign In failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Countdown timer for Resend OTP
   useEffect(() => {
@@ -164,6 +104,31 @@ export default function LoginPage() {
       setSuccessMessage('Account created successfully! Welcome to FFMS.');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Google Direct Instant Login / Auto-Signup
+  const handleGoogleDirectAccess = async (emailToUse, nameToUse) => {
+    const finalEmail = (emailToUse || googleEmail || '').trim().toLowerCase();
+    const finalName = (nameToUse || googleName || '').trim();
+
+    if (!finalEmail) {
+      setError('Please enter a valid Google Mail address.');
+      return;
+    }
+
+    setLoading(true);
+    clearMessages();
+
+    try {
+      await loginWithGoogle({
+        email: finalEmail,
+        full_name: finalName || finalEmail.split('@')[0]
+      });
+    } catch (err) {
+      setError(err.message || 'Google authentication failed.');
     } finally {
       setLoading(false);
     }
@@ -294,14 +259,16 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* MODE 1: SIGN IN */}
+          {/* MODE 1: STANDARD LOGIN */}
           {mode === 'login' && (
             <div className="mt-6 space-y-4">
-              {/* 1-Tap Google One-Click Direct Sign In Button */}
+              {/* Google Mail Direct Sign In / Auto Sign-Up Button */}
               <button
                 type="button"
-                onClick={handleOneTapGoogleLogin}
-                disabled={loading}
+                onClick={() => {
+                  clearMessages();
+                  setMode('google_access');
+                }}
                 className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white py-3 px-4 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-indigo-300 hover:shadow-md active:scale-98 transition cursor-pointer"
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
@@ -310,7 +277,7 @@ export default function LoginPage() {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                <span>{loading ? 'Connecting with Google...' : 'Sign in with Google Mail (1-Tap)'}</span>
+                <span>Sign in / Sign up with Google Mail</span>
               </button>
 
               {/* Divider */}
@@ -331,7 +298,7 @@ export default function LoginPage() {
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Enter username or email address"
+                      placeholder="e.g. devika or yourname@gmail.com"
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-3 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
                     />
                   </div>
@@ -401,28 +368,159 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* MODE 2: SIGN UP */}
+          {/* MODE 2: GOOGLE MAIL DIRECT ACCESS (SIGN IN / AUTO SIGN-UP) */}
+          {mode === 'google_access' && (
+            <div className="mt-6 space-y-4">
+              <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border border-blue-100 text-slate-800">
+                <div className="flex items-center gap-2 font-black text-xs text-indigo-900">
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>Google Mail Direct Login & Auto-Registration</span>
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  Enter your Google Mail. If your account exists, you will be signed in instantly. If you are new, your faculty account will be created automatically in 1 click!
+                </p>
+              </div>
+
+              {/* 1-Tap Quick Profiles */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Quick 1-Tap Accounts
+                </span>
+                <div className="grid grid-cols-1 gap-2">
+                  {/* Lingampalli Sai Varsha */}
+                  <button
+                    type="button"
+                    onClick={() => handleGoogleDirectAccess('lingampallisaivarsha@gmail.com', 'Lingampalli Sai Varsha')}
+                    disabled={loading}
+                    className="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/50 p-2.5 text-left hover:bg-indigo-100/70 active:scale-98 transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-black text-white">
+                        LS
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-900">Lingampalli Sai Varsha</p>
+                        <p className="text-[10px] text-slate-500 font-mono">lingampallisaivarsha@gmail.com</p>
+                      </div>
+                    </div>
+                    <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                      1-Tap Login
+                    </span>
+                  </button>
+
+                  {/* Potta Devika */}
+                  <button
+                    type="button"
+                    onClick={() => handleGoogleDirectAccess('p.devika@vnrvjiet.in', 'Potta Devika')}
+                    disabled={loading}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-left hover:bg-slate-100 active:scale-98 transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 text-xs font-black text-white">
+                        PD
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-900">Mrs. Potta Devika</p>
+                        <p className="text-[10px] text-slate-500 font-mono">p.devika@vnrvjiet.in (Admin)</p>
+                      </div>
+                    </div>
+                    <span className="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                      1-Tap Login
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom Google Email Input */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">
+                    Or Enter Any Google Email (@gmail.com or @vnrvjiet.in)
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={googleEmail}
+                    onChange={(e) => setGoogleEmail(e.target.value)}
+                    placeholder="e.g. yourname@gmail.com or name@vnrvjiet.in"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">
+                    Faculty Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={googleName}
+                    onChange={(e) => setGoogleName(e.target.value)}
+                    placeholder="e.g. Dr. Sai Varsha"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleGoogleDirectAccess()}
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:from-blue-800 hover:to-indigo-700 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                >
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>{loading ? 'Authenticating...' : 'Sign In / Auto-Create Account'}</span>
+                </button>
+              </div>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearMessages();
+                    setMode('login');
+                  }}
+                  className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 mx-auto cursor-pointer"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Back to Password Login</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODE 3: SIGN UP */}
           {mode === 'signup' && (
             <div className="mt-6 space-y-4">
-              {/* 1-Tap Google Registration */}
+              {/* Google Fast Register Button */}
               <button
                 type="button"
-                onClick={handleOneTapGoogleLogin}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white py-3 px-4 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-indigo-300 hover:shadow-md active:scale-98 transition cursor-pointer"
+                onClick={() => {
+                  clearMessages();
+                  setMode('google_access');
+                }}
+                className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition cursor-pointer"
               >
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                <span>{loading ? 'Connecting...' : 'Sign up with Google Mail (1-Tap)'}</span>
+                <span>Fast Sign Up with Google Mail</span>
               </button>
 
               <div className="relative my-3 flex items-center justify-center">
                 <div className="w-full border-t border-slate-200" />
-                <span className="bg-white px-3 text-[11px] font-bold text-slate-400 uppercase">Or Register with Email</span>
+                <span className="bg-white px-3 text-[11px] font-bold text-slate-400 uppercase">Or Register with Form</span>
               </div>
 
               <form onSubmit={handleSignupSubmit} className="space-y-3.5">
@@ -508,10 +606,10 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* MODE 3: FORGOT PASSWORD (REQUEST OTP) */}
+          {/* MODE 4: FORGOT PASSWORD (REQUEST OTP) */}
           {mode === 'forgot_password' && (
             <div className="mt-6 space-y-4">
-              <div className="rounded-2xl bg-indigo-50/60 p-4 border border-indigo-100 dark:border-indigo-900/50">
+              <div className="rounded-2xl bg-indigo-50/60 p-4 border border-indigo-100">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs">
                   <Mail className="h-4 w-4 text-indigo-600" />
                   <span>Google Mail / Mailbox OTP Verification</span>
@@ -565,7 +663,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* MODE 4: VERIFY OTP & SET NEW PASSWORD */}
+          {/* MODE 5: VERIFY OTP & SET NEW PASSWORD */}
           {mode === 'otp_verify' && (
             <div className="mt-6 space-y-4">
               {/* Simulated Mailbox Notification Banner */}
