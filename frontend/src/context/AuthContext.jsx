@@ -61,6 +61,26 @@ export function AuthProvider({ children }) {
     throw new Error('Login failed: Invalid server response');
   };
 
+  const loginWithGoogle = async (googlePayload) => {
+    const data = await api.post('/auth/google', googlePayload);
+    if (data && data.token) {
+      setToken(data.token);
+      setUser(data.user);
+      return data.user;
+    }
+    throw new Error('Google Sign In failed');
+  };
+
+  const signup = async (signupData) => {
+    const data = await api.post('/auth/signup', signupData);
+    if (data && data.token) {
+      setToken(data.token);
+      setUser(data.user);
+      return data.user;
+    }
+    throw new Error('Registration failed');
+  };
+
   const logout = async () => {
     try {
       await api.post('/auth/logout');
@@ -108,6 +128,8 @@ export function AuthProvider({ children }) {
         loading,
         collegeSettings,
         login,
+        loginWithGoogle,
+        signup,
         logout,
         quickSwitchUser,
         refreshUser,

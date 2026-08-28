@@ -19,6 +19,10 @@ const settingsController = require('../controllers/settingsController');
 
 // ---------------- Authentication Routes ----------------
 router.post('/auth/login', authController.login);
+router.post('/auth/google', authController.googleLogin);
+router.post('/auth/signup', authController.signup);
+router.post('/auth/forgot-password', authController.forgotPassword);
+router.post('/auth/reset-password', authController.verifyOtpAndResetPassword);
 router.get('/auth/me', authenticate, authController.me);
 router.put('/auth/profile', authenticate, authController.updateProfile);
 router.post('/auth/change-password', authenticate, authController.changePassword);
