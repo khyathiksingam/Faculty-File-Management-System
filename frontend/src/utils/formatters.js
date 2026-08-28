@@ -7,10 +7,23 @@ export function formatBytes(bytes, decimals = 2) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
+export function parseUtcDate(dateString) {
+  if (!dateString) return null;
+  let s = String(dateString).trim();
+  // SQLite timestamps 'YYYY-MM-DD HH:MM:SS' without timezone indicator are UTC
+  if (!s.endsWith('Z') && !s.includes('+') && !s.includes('T')) {
+    s = s.replace(' ', 'T') + 'Z';
+  } else if (!s.endsWith('Z') && !s.includes('+') && s.includes('T')) {
+    s = s + 'Z';
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? new Date(dateString) : d;
+}
+
 export function formatDate(dateString) {
   if (!dateString) return '—';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
+  const date = parseUtcDate(dateString);
+  if (!date || isNaN(date.getTime())) return dateString;
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -22,10 +35,10 @@ export function formatDate(dateString) {
 
 export function formatRelativeTime(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '';
+  const date = parseUtcDate(dateString);
+  if (!date || isNaN(date.getTime())) return '';
   const now = new Date();
-  const diffInSeconds = Math.floor((now - date) / 1000);
+  const diffInSeconds = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 1000));
 
   if (diffInSeconds < 60) return 'Just now';
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
