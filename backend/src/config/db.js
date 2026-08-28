@@ -104,7 +104,6 @@ function createSchema() {
       is_favorite INTEGER DEFAULT 0,
       drive_link TEXT DEFAULT '',
       visibility TEXT DEFAULT 'public' CHECK(visibility IN ('public', 'private')),
-      file_data BLOB,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       deleted_at DATETIME DEFAULT NULL,
@@ -121,7 +120,6 @@ function createSchema() {
       size INTEGER NOT NULL,
       uploaded_by INTEGER NOT NULL,
       note TEXT DEFAULT '',
-      file_data BLOB,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
       FOREIGN KEY (uploaded_by) REFERENCES users(id)
@@ -207,16 +205,6 @@ function createSchema() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS password_resets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      email TEXT NOT NULL,
-      otp TEXT NOT NULL,
-      expires_at DATETIME NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
-
     -- Performance Indexes
     CREATE INDEX IF NOT EXISTS idx_files_folder ON files(folder_id);
     CREATE INDEX IF NOT EXISTS idx_files_owner ON files(owner_id);
@@ -232,8 +220,6 @@ function createSchema() {
   try { db.run("ALTER TABLE folders ADD COLUMN drive_link TEXT DEFAULT ''"); } catch (e) {}
   try { db.run("ALTER TABLE files ADD COLUMN drive_link TEXT DEFAULT ''"); } catch (e) {}
   try { db.run("ALTER TABLE files ADD COLUMN visibility TEXT DEFAULT 'public'"); } catch (e) {}
-  try { db.run("ALTER TABLE files ADD COLUMN file_data BLOB"); } catch (e) {}
-  try { db.run("ALTER TABLE file_versions ADD COLUMN file_data BLOB"); } catch (e) {}
 }
 
 function sanitizeParams(params = []) {

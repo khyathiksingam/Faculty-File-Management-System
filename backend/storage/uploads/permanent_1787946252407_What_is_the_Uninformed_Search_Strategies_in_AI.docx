@@ -1,0 +1,1 @@
+Uninformed search algorithms (also known as blind search) have no additional information about states beyond that provided in the problem definition. Examples include Breadth-First Search (BFS), Depth-First Search (DFS), Uniform-Cost Search, Depth-Limited Search, and Iterative Deepening Search.

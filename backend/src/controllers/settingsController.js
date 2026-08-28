@@ -86,42 +86,6 @@ const settingsController = {
       console.error('Update settings error:', error);
       res.status(500).json({ error: error.message || 'Failed to update settings.' });
     }
-  },
-
-  async backupDatabase(req, res) {
-    try {
-      const path = require('path');
-      const fs = require('fs');
-      const DB_FILE = path.resolve(__dirname, '../../data/ffms.sqlite');
-      if (!fs.existsSync(DB_FILE)) {
-        return res.status(404).json({ error: 'Database file not found.' });
-      }
-      res.setHeader('Content-Disposition', 'attachment; filename="ffms_college_backup.sqlite"');
-      res.setHeader('Content-Type', 'application/x-sqlite3');
-      const fileStream = fs.createReadStream(DB_FILE);
-      fileStream.pipe(res);
-    } catch (error) {
-      console.error('Backup database error:', error);
-      res.status(500).json({ error: 'Failed to create database backup.' });
-    }
-  },
-
-  async restoreDatabase(req, res) {
-    try {
-      const path = require('path');
-      const fs = require('fs');
-      if (!req.file) {
-        return res.status(400).json({ error: 'Please upload a valid SQLite backup file.' });
-      }
-      const DB_FILE = path.resolve(__dirname, '../../data/ffms.sqlite');
-      fs.copyFileSync(req.file.path, DB_FILE);
-      try { fs.unlinkSync(req.file.path); } catch (e) {}
-
-      res.json({ success: true, message: 'Database successfully restored from backup! Please refresh the page.' });
-    } catch (error) {
-      console.error('Restore database error:', error);
-      res.status(500).json({ error: 'Failed to restore database.' });
-    }
   }
 };
 
