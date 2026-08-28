@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, Lock, User, Eye, EyeOff, ArrowRight, ShieldCheck, 
   Mail, KeyRound, RotateCcw, CheckCircle2, AlertCircle, ArrowLeft,
-  Sparkles
+  Sparkles, Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
@@ -33,7 +33,7 @@ export default function LoginPage() {
   const [targetEmail, setTargetEmail] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Google SSO simulated modal
+  // Google SSO modal
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
@@ -64,7 +64,7 @@ export default function LoginPage() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError('Please enter your faculty username/email and password.');
+      setError('Please enter your username or email (Gmail / VNR VJIET) and password.');
       return;
     }
 
@@ -74,7 +74,7 @@ export default function LoginPage() {
     try {
       await login(username.trim(), password);
     } catch (err) {
-      setError(err.message || 'Invalid credentials. Please verify your username and password.');
+      setError(err.message || 'Invalid credentials. Please check your username/email and password.');
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ export default function LoginPage() {
         email: signupEmail.trim().toLowerCase(),
         password: signupPassword
       });
-      setSuccessMessage('Account created successfully! Welcome to FFMS.');
+      setSuccessMessage('Account registered successfully! Welcome to FFMS.');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -113,7 +113,7 @@ export default function LoginPage() {
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!resetEmailOrUser.trim()) {
-      setError('Please enter your username or VNR VJIET email.');
+      setError('Please enter your username or email address (Gmail / VNR VJIET).');
       return;
     }
 
@@ -125,13 +125,13 @@ export default function LoginPage() {
         emailOrUsername: resetEmailOrUser.trim()
       });
 
-      setTargetEmail(res.email || `${resetEmailOrUser.trim()}@vnrvjiet.in`);
+      setTargetEmail(res.email || resetEmailOrUser.trim());
       setReceivedOtpPreview(res.otp || '');
       setSuccessMessage(res.message || `OTP sent to ${res.email}`);
       setResendCooldown(45);
       setMode('otp_verify');
     } catch (err) {
-      setError(err.message || 'Failed to send OTP. Please check your username or email.');
+      setError(err.message || 'Failed to send OTP. Please check your email or username.');
     } finally {
       setLoading(false);
     }
@@ -200,7 +200,7 @@ export default function LoginPage() {
   const handleGoogleSsoSubmit = async (e) => {
     e.preventDefault();
     if (!googleEmail.trim()) {
-      setError('Please enter your Google / VNR VJIET email.');
+      setError('Please enter your Google Mail address.');
       return;
     }
 
@@ -265,7 +265,7 @@ export default function LoginPage() {
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
-                    Faculty Username or Mailbox (@vnrvjiet.in)
+                    Username or Email (Gmail / @vnrvjiet.in)
                   </label>
                   <div className="relative mt-1.5">
                     <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -274,10 +274,13 @@ export default function LoginPage() {
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="e.g. devika or p.devika@vnrvjiet.in"
+                      placeholder="e.g. devika, name@gmail.com, or p.devika@vnrvjiet.in"
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-3 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
                     />
                   </div>
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    Accepts Google Mail (@gmail.com), VNR VJIET (@vnrvjiet.in), or Username
+                  </p>
                 </div>
 
                 <div>
@@ -333,11 +336,11 @@ export default function LoginPage() {
                 <span className="bg-white px-3 text-[11px] font-bold text-slate-400 uppercase">Or Continue With</span>
               </div>
 
-              {/* Google Mail / Workspace SSO Button */}
+              {/* Google Mail SSO Button */}
               <button
                 type="button"
                 onClick={() => {
-                  setGoogleEmail(username.includes('@') ? username : `${username || 'faculty'}@vnrvjiet.in`);
+                  setGoogleEmail(username.includes('@') ? username : '');
                   setShowGoogleModal(true);
                 }}
                 className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition cursor-pointer"
@@ -348,7 +351,7 @@ export default function LoginPage() {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                <span>Sign In with Google Mail (@vnrvjiet.in)</span>
+                <span>Continue with Google Mail (Gmail / Workspace)</span>
               </button>
 
               {/* Toggle to Signup */}
@@ -362,7 +365,7 @@ export default function LoginPage() {
                   }}
                   className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
                 >
-                  Create Faculty Account
+                  Create Account with Google or Email
                 </button>
               </div>
             </div>
@@ -371,6 +374,29 @@ export default function LoginPage() {
           {/* MODE 2: SIGN UP */}
           {mode === 'signup' && (
             <div className="mt-6 space-y-4">
+              {/* Google Fast Register Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setGoogleEmail('');
+                  setShowGoogleModal(true);
+                }}
+                className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition cursor-pointer"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Sign Up with Google Mail</span>
+              </button>
+
+              <div className="relative my-3 flex items-center justify-center">
+                <div className="w-full border-t border-slate-200" />
+                <span className="bg-white px-3 text-[11px] font-bold text-slate-400 uppercase">Or Register with Email</span>
+              </div>
+
               <form onSubmit={handleSignupSubmit} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
@@ -402,14 +428,14 @@ export default function LoginPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
-                    VNR VJIET Email ID
+                    Email Address (Gmail or @vnrvjiet.in)
                   </label>
                   <input
                     type="email"
                     required
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
-                    placeholder="e.g. rajesh_b@vnrvjiet.in"
+                    placeholder="e.g. yourname@gmail.com or rajesh_b@vnrvjiet.in"
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                   />
                 </div>
@@ -423,7 +449,7 @@ export default function LoginPage() {
                     required
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
-                    placeholder="Create a strong password"
+                    placeholder="Create a secure password"
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                   />
                 </div>
@@ -433,7 +459,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:from-blue-800 hover:to-indigo-700 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                 >
-                  {loading ? 'Creating Account...' : 'Register Faculty Account'}
+                  {loading ? 'Creating Account...' : 'Register Account'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </form>
@@ -448,7 +474,7 @@ export default function LoginPage() {
                   className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 mx-auto cursor-pointer"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  <span>Back to Sign In</span>
+                  <span>Already have an account? Sign In</span>
                 </button>
               </div>
             </div>
@@ -460,17 +486,17 @@ export default function LoginPage() {
               <div className="rounded-2xl bg-indigo-50/60 p-4 border border-indigo-100 dark:border-indigo-900/50">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs">
                   <Mail className="h-4 w-4 text-indigo-600" />
-                  <span>VNR VJIET Mailbox OTP Verification</span>
+                  <span>Google Mail / Mailbox OTP Verification</span>
                 </div>
                 <p className="text-[11px] text-indigo-700 mt-1">
-                  Enter your faculty username or email ID. We will generate and send a 6-digit OTP code to your official mailbox.
+                  Enter your Username or Email address (Google Mail @gmail.com or @vnrvjiet.in). We will generate and send a 6-digit OTP code to verify your account.
                 </p>
               </div>
 
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
-                    Faculty Username or Email (@vnrvjiet.in)
+                    Username or Email (Gmail / @vnrvjiet.in)
                   </label>
                   <div className="relative mt-1.5">
                     <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -479,7 +505,7 @@ export default function LoginPage() {
                       required
                       value={resetEmailOrUser}
                       onChange={(e) => setResetEmailOrUser(e.target.value)}
-                      placeholder="e.g. devika or p.devika@vnrvjiet.in"
+                      placeholder="e.g. devika, yourname@gmail.com, or p.devika@vnrvjiet.in"
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-3 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                     />
                   </div>
@@ -520,7 +546,7 @@ export default function LoginPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold flex items-center gap-1.5">
                       <Sparkles className="h-4 w-4 text-amber-600" />
-                      VNR VJIET Mailbox OTP Code:
+                      Google Mail / Mailbox OTP Code:
                     </span>
                     <span className="font-mono text-sm font-black tracking-widest bg-amber-200/80 px-2 py-0.5 rounded-md text-amber-950">
                       {receivedOtpPreview}
@@ -621,7 +647,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Google Sign In Modal */}
+      {/* Google Sign In / Sign Up Modal */}
       {showGoogleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-left animate-in zoom-in-95">
@@ -633,35 +659,35 @@ export default function LoginPage() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
               <div>
-                <h3 className="text-sm font-black text-slate-900">Google Workspace SSO</h3>
-                <p className="text-[11px] text-slate-400">VNR VJIET Institutional Login</p>
+                <h3 className="text-sm font-black text-slate-900">Google Mail SSO</h3>
+                <p className="text-[11px] text-slate-400">Sign in or Register with Google</p>
               </div>
             </div>
 
             <form onSubmit={handleGoogleSsoSubmit} className="mt-4 space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-700">
-                  Google Mail Address (@vnrvjiet.in)
+                  Google Mail Address (@gmail.com or @vnrvjiet.in)
                 </label>
                 <input
                   type="email"
                   required
                   value={googleEmail}
                   onChange={(e) => setGoogleEmail(e.target.value)}
-                  placeholder="name@vnrvjiet.in or gmail.com"
+                  placeholder="e.g. yourname@gmail.com or name@vnrvjiet.in"
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700">
-                  Display Name
+                  Display / Faculty Name
                 </label>
                 <input
                   type="text"
                   value={googleName}
                   onChange={(e) => setGoogleName(e.target.value)}
-                  placeholder="Your Full Name"
+                  placeholder="e.g. Dr. K. Sharma"
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                 />
               </div>
@@ -670,7 +696,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowGoogleModal(false)}
-                  className="rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -679,7 +705,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-700 cursor-pointer"
                 >
-                  <span>Authorize & Sign In</span>
+                  <span>Authorize & Continue</span>
                 </button>
               </div>
             </form>
