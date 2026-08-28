@@ -7,7 +7,7 @@ const folderController = {
       const user = req.user;
 
       let sql = `
-        SELECT f.id, f.name, f.parent_folder_id, f.department_id, f.created_by, f.color,
+        SELECT f.id, f.name, f.parent_folder_id, f.department_id, f.created_by, f.color, f.external_url,
                f.created_at, f.updated_at,
                u.full_name as creator_name,
                d.name as department_name, d.code as department_code,

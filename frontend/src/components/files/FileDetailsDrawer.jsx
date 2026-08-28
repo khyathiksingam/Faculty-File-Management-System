@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileText, Sparkles, Share2, Shield, Calendar, User, Building2, HardDrive, Hash, Check } from 'lucide-react';
+import { X, FileText, Sparkles, Share2, Shield, Calendar, User, Building2, HardDrive, Hash, Check, ExternalLink } from 'lucide-react';
 import { formatBytes, formatDate } from '../../utils/formatters';
 import { api } from '../../utils/api';
 import { getFileIcon } from './FileCard';
@@ -73,6 +73,21 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
               </span>
             )}
           </div>
+
+          {/* Direct Google Docs / Drive Integration Button */}
+          {f.external_url && (
+            <div className="mt-3">
+              <a
+                href={f.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition active:scale-95"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span>Open in Google Docs / Drive</span>
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Metadata Properties Grid */}
@@ -152,7 +167,7 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
           <div>
             <h5 className="font-bold text-xs text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-              OCR Text Content
+              Document Text Content / OCR
             </h5>
             <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-[11px] leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 whitespace-pre-wrap">
               {f.extracted_text}

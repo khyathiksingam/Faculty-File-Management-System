@@ -46,9 +46,23 @@ export default function FolderCard({ folder, onOpen, onRename, onMove, onDelete 
           <Folder className="h-5 w-5 fill-current/20" />
         </div>
         <div className="overflow-hidden">
-          <h4 className="truncate font-semibold text-xs text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-            {folder.name}
-          </h4>
+          <div className="flex items-center gap-1.5">
+            <h4 className="truncate font-semibold text-xs text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+              {folder.name}
+            </h4>
+            {folder.external_url && (
+              <a
+                href={folder.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="Open in Google Drive"
+                className="inline-flex items-center rounded-md bg-blue-50 border border-blue-200 px-1 py-0.2 text-[9px] font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:border-blue-800 dark:text-blue-300"
+              >
+                Drive ↗
+              </a>
+            )}
+          </div>
           <p className="text-[10px] text-slate-400">
             {folder.file_count || 0} files {folder.subfolder_count ? `• ${folder.subfolder_count} folders` : ''}
           </p>

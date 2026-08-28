@@ -1,7 +1,6 @@
-import React from 'react';
 import { 
   Eye, Download, Share2, Star, MoreVertical, Edit3, 
-  Trash2, History, Info, Sparkles, FolderInput
+  Trash2, History, Info, Sparkles, FolderInput, ExternalLink
 } from 'lucide-react';
 import { formatBytes, formatDate, formatRelativeTime } from '../../utils/formatters';
 import { getFileIcon } from './FileCard';
@@ -121,6 +120,17 @@ export default function FileTable({
                 <div className="flex items-center justify-end gap-1">
                   {!isTrash ? (
                     <>
+                      {file.external_url && (
+                        <a
+                          href={file.external_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/50"
+                          title="Open in Google Docs / Drive"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
                       <button
                         onClick={() => onPreview(file)}
                         className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
