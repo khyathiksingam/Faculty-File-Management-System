@@ -13,12 +13,6 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
-# Database binaries & dynamic uploads
-backend/data/*.sqlite
-backend/data/*.sqlite-journal
-backend/storage/uploads/*
-!backend/storage/uploads/.gitkeep
-
 # Editor & OS files
 .DS_Store
 Thumbs.db
