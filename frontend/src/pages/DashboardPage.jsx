@@ -171,7 +171,7 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
               <div className="mt-3 text-2xl font-black text-slate-900 dark:text-white">
                 {formatBytes(stats.totalStorageBytes || 0)}
               </div>
-              <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">of 20 GB allocated</p>
+              <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">of 100 GB allocated</p>
             </div>
           </>
         ) : isHOD ? (

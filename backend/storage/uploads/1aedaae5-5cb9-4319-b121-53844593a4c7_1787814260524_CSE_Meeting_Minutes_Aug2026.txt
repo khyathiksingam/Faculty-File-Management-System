@@ -1,0 +1,17 @@
+ABC ENGINEERING COLLEGE
+DEPARTMENT OF COMPUTER SCIENCE & ENGINEERING
+Minutes of Departmental Meeting - August 2026
+
+Attendees:
+- Dr. Ravi Kumar (HOD)
+- Prof. Vikram Mehta
+- Dr. Sneha Reddy
+
+Agenda:
+1. Implementation of Faculty File Management System (FFMS)
+2. Accreditation documentation review and NAAC file preparations
+3. Finalization of Semester examination question papers
+
+Decisions Taken:
+- All faculty must organize lesson plans and lab manuals in FFMS
+- Question paper repository must be verified by HOD

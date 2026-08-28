@@ -67,7 +67,7 @@ export default function Sidebar({
   const navItems = getNavItems();
 
   const usedBytes = storageStats?.totalStorageBytes || storageStats?.departmentStorageBytes || storageStats?.storageUsedBytes || 0;
-  const quotaBytes = storageStats?.storageQuotaBytes || (20 * 1024 * 1024 * 1024);
+  const quotaBytes = storageStats?.storageQuotaBytes || (100 * 1024 * 1024 * 1024);
   const percentage = Math.min(100, Math.round((usedBytes / quotaBytes) * 100 * 10) / 10);
 
   const handleNavClick = (path) => {

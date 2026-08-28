@@ -53,7 +53,7 @@ const analyticsController = {
             totalFiles: totalFiles?.count || 0,
             totalStorageBytes: totalStorage?.bytes || 0,
             filesUploadedToday: uploadedToday?.count || 0,
-            storageQuotaBytes: 20 * 1024 * 1024 * 1024 // 20 GB default quota
+            storageQuotaBytes: 100 * 1024 * 1024 * 1024 // 100 GB quota
           },
           recentActivity,
           recentFiles
@@ -209,7 +209,7 @@ const analyticsController = {
         LIMIT 10
       `, filterParams);
 
-      const totalQuota = 20 * 1024 * 1024 * 1024; // 20 GB default
+      const totalQuota = 100 * 1024 * 1024 * 1024; // 100 GB default quota
 
       res.json({
         totalStorageBytes: totalStorageRes?.total_bytes || 0,

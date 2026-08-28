@@ -70,6 +70,8 @@ router.post('/files/:id/star', authenticate, fileController.toggleStar);
 router.patch('/files/:id/visibility', authenticate, fileController.toggleVisibility);
 router.delete('/files/:id', authenticate, fileController.deleteFile); // soft delete to trash
 router.post('/files/:id/restore', authenticate, fileController.restoreFile);
+router.post('/trash/restore-all', authenticate, fileController.restoreAllTrash);
+router.post('/trash/restore-selected', authenticate, fileController.restoreSelectedTrash);
 router.delete('/files/:id/permanent', authenticate, fileController.permanentlyDeleteFile);
 router.delete('/trash/empty', authenticate, fileController.emptyTrash);
 

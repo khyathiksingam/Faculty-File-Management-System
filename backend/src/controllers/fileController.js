@@ -610,6 +610,66 @@ const fileController = {
     }
   },
 
+  async restoreAllTrash(req, res) {
+    try {
+      const user = req.user;
+      let sql = "SELECT * FROM files WHERE deleted_at IS NOT NULL";
+      const params = [];
+
+      if (user.role_name === 'faculty') {
+        sql += " AND owner_id = ?";
+        params.push(user.id);
+      } else if (user.role_name === 'hod') {
+        sql += " AND (department_id = ? OR owner_id = ?)";
+        params.push(user.department_id || -1, user.id);
+      }
+
+      const files = await dbHelper.all(sql, params);
+      if (files.length === 0) {
+        return res.json({ message: 'No files in Trash to restore.', count: 0 });
+      }
+
+      for (const f of files) {
+        await dbHelper.run("UPDATE files SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [f.id]);
+      }
+
+      await dbHelper.run(`
+        INSERT INTO activity_logs (user_id, action, department_id, metadata)
+        VALUES (?, 'All Files Restored from Trash', ?, ?)
+      `, [user.id, user.department_id, JSON.stringify({ count: files.length })]);
+
+      res.json({ success: true, count: files.length, message: `All ${files.length} file(s) successfully restored from Trash.` });
+    } catch (error) {
+      console.error('Restore all trash error:', error);
+      res.status(500).json({ error: 'Failed to restore all files from trash.' });
+    }
+  },
+
+  async restoreSelectedTrash(req, res) {
+    try {
+      const user = req.user;
+      const { file_ids } = req.body;
+
+      if (!file_ids || !Array.isArray(file_ids) || file_ids.length === 0) {
+        return res.status(400).json({ error: 'No files specified for restoration.' });
+      }
+
+      let restoredCount = 0;
+      for (const id of file_ids) {
+        const file = await dbHelper.get("SELECT * FROM files WHERE id = ?", [id]);
+        if (file && (user.role_name === 'admin' || file.owner_id === user.id || (user.role_name === 'hod' && file.department_id === user.department_id))) {
+          await dbHelper.run("UPDATE files SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
+          restoredCount++;
+        }
+      }
+
+      res.json({ success: true, count: restoredCount, message: `${restoredCount} file(s) restored successfully.` });
+    } catch (error) {
+      console.error('Restore selected trash error:', error);
+      res.status(500).json({ error: 'Failed to restore selected files.' });
+    }
+  },
+
   async permanentlyDeleteFile(req, res) {
     try {
       const { id } = req.params;
