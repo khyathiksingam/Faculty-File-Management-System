@@ -46,7 +46,7 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
         </div>
         <button
           onClick={onClose}
-          className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
@@ -73,22 +73,32 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
               </span>
             )}
           </div>
+        </div>
 
-          {/* Direct Google Docs / Drive Integration Button */}
-          {f.external_url && (
-            <div className="mt-3">
+        {/* Google Drive / Docs Direct Link */}
+        {f.drive_link && (
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/40">
+            <div className="flex items-center justify-between">
+              <div>
+                <h5 className="font-bold text-xs text-blue-900 dark:text-blue-200">
+                  Google Drive / Docs Document
+                </h5>
+                <p className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
+                  Official synced cloud document
+                </p>
+              </div>
               <a
-                href={f.external_url}
+                href={f.drive_link}
                 target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition active:scale-95"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition active:scale-95"
               >
-                <ExternalLink className="h-4 w-4" />
-                <span>Open in Google Docs / Drive</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>Open Doc</span>
               </a>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Metadata Properties Grid */}
         <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 dark:border-slate-800 dark:bg-slate-850 space-y-2.5 text-xs">
@@ -106,7 +116,7 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
               <User className="h-3.5 w-3.5" /> Uploaded By
             </span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">
-              {f.owner_name || 'You'}
+              {f.owner_name || 'Mrs. P. Devika'}
             </span>
           </div>
 
@@ -115,7 +125,7 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
               <Building2 className="h-3.5 w-3.5" /> Department
             </span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">
-              {f.department_name || f.department_code || 'General'}
+              {f.department_name || f.department_code || 'CSE'}
             </span>
           </div>
 
@@ -145,7 +155,7 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
             Sharing Details
           </h5>
           {shares.length === 0 ? (
-            <p className="text-xs text-slate-400 italic">Not shared with any users or departments.</p>
+            <p className="text-xs text-slate-400 italic">Not shared with any external departments.</p>
           ) : (
             <div className="space-y-1.5">
               {shares.map(s => (
@@ -167,7 +177,7 @@ export default function FileDetailsDrawer({ isOpen, onClose, file }) {
           <div>
             <h5 className="font-bold text-xs text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-              Document Text Content / OCR
+              OCR Text Content
             </h5>
             <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-[11px] leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 whitespace-pre-wrap">
               {f.extracted_text}

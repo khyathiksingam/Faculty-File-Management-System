@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Download, Share2, ZoomIn, ZoomOut, RotateCw, 
-  FileText, Sparkles, FileSpreadsheet, Eye, Info, Check
+  FileText, Sparkles, FileSpreadsheet, Eye, Info, Check, ExternalLink
 } from 'lucide-react';
 import { formatBytes, formatDate } from '../../utils/formatters';
 import { getToken } from '../../utils/api';
@@ -50,12 +50,12 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
   const handleZoomOut = () => setZoom(prev => Math.max(50, prev - 25));
   const handleRotate = () => setRotation(prev => (prev + 90) % 360);
 
-  const isImage = file.file_type === 'image' || file.mime_type.startsWith('image/');
+  const isImage = file.file_type === 'image' || file.mime_type?.startsWith('image/');
   const isPdf = file.file_type === 'pdf' || file.mime_type === 'application/pdf';
-  const isVideo = file.file_type === 'video' || file.mime_type.startsWith('video/');
-  const isAudio = file.file_type === 'audio' || file.mime_type.startsWith('audio/');
+  const isVideo = file.file_type === 'video' || file.mime_type?.startsWith('video/');
+  const isAudio = file.file_type === 'audio' || file.mime_type?.startsWith('audio/');
   const isCsv = file.file_type === 'spreadsheet' || file.name.endsWith('.csv');
-  const isText = file.file_type === 'document' && (file.mime_type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md'));
+  const isText = file.file_type === 'document' && (file.mime_type?.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md'));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-2 sm:p-4 backdrop-blur-md">
@@ -69,7 +69,7 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
                 {file.name}
               </h3>
               <p className="text-[11px] text-slate-400">
-                {formatBytes(file.size)} • Uploaded by {file.owner_name || 'You'} • {formatDate(file.created_at)}
+                {formatBytes(file.size)} • Uploaded by {file.owner_name || 'Mrs. P. Devika'} • {formatDate(file.created_at)}
               </p>
             </div>
           </div>
@@ -146,6 +146,19 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
               </div>
             )}
 
+            {/* Direct Google Docs / Drive link */}
+            {file.drive_link && (
+              <a
+                href={file.drive_link}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>Open Google Doc</span>
+              </a>
+            )}
+
             <button
               onClick={() => onShare && onShare(file)}
               className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -156,7 +169,7 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
 
             <button
               onClick={() => onDownload && onDownload(file)}
-              className="flex items-center gap-1 rounded-xl bg-brand-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-700"
+              className="flex items-center gap-1 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-blue-800 hover:to-indigo-700"
             >
               <Download className="h-3.5 w-3.5" />
               Download
@@ -274,18 +287,32 @@ export default function FilePreviewModal({ isOpen, onClose, file, onShare, onDow
                     <FileText className="h-8 w-8" />
                   </div>
                   <h4 className="mt-4 font-bold text-base text-slate-800 dark:text-slate-200">
-                    Preview unavailable for this format
+                    {file.name}
                   </h4>
                   <p className="mt-1 text-xs text-slate-500">
-                    You can download the file to view it in your desktop application.
+                    Official academic document for Mrs. P. Devika.
                   </p>
-                  <button
-                    onClick={() => onDownload && onDownload(file)}
-                    className="mt-5 flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-semibold text-white shadow-md shadow-brand-500/25 hover:bg-brand-700"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download {file.name}
-                  </button>
+
+                  <div className="mt-5 flex flex-col sm:flex-row items-center gap-2.5">
+                    {file.drive_link && (
+                      <a
+                        href={file.drive_link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 transition active:scale-95"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>Open in Google Docs</span>
+                      </a>
+                    )}
+                    <button
+                      onClick={() => onDownload && onDownload(file)}
+                      className="flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-slate-700 transition active:scale-95"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download File</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

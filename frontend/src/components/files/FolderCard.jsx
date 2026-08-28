@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Folder, MoreVertical, Edit3, Trash2, FolderInput, ArrowRight } from 'lucide-react';
+import { Folder, MoreVertical, Edit3, Trash2, FolderInput, ArrowRight, ExternalLink } from 'lucide-react';
 
 export default function FolderCard({ folder, onOpen, onRename, onMove, onDelete }) {
   const [showMenu, setShowMenu] = useState(false);
@@ -46,71 +46,89 @@ export default function FolderCard({ folder, onOpen, onRename, onMove, onDelete 
           <Folder className="h-5 w-5 fill-current/20" />
         </div>
         <div className="overflow-hidden">
-          <div className="flex items-center gap-1.5">
-            <h4 className="truncate font-semibold text-xs text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-              {folder.name}
-            </h4>
-            {folder.external_url && (
-              <a
-                href={folder.external_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                title="Open in Google Drive"
-                className="inline-flex items-center rounded-md bg-blue-50 border border-blue-200 px-1 py-0.2 text-[9px] font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:border-blue-800 dark:text-blue-300"
-              >
-                Drive ↗
-              </a>
+          <h4 className="truncate font-semibold text-xs text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+            {folder.name}
+          </h4>
+          <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+            <span>{folder.file_count || 0} files</span>
+            {folder.drive_link && (
+              <span className="inline-flex items-center gap-0.5 font-bold text-blue-600 dark:text-blue-400">
+                • Drive Link
+              </span>
             )}
-          </div>
-          <p className="text-[10px] text-slate-400">
-            {folder.file_count || 0} files {folder.subfolder_count ? `• ${folder.subfolder_count} folders` : ''}
           </p>
         </div>
       </div>
 
-      <div className="relative ml-2" ref={menuRef}>
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="rounded-lg p-1 text-slate-400 opacity-80 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          title="Folder actions"
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
-
-        {showMenu && (
-          <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900 text-left">
-            <button
-              onClick={() => { setShowMenu(false); onOpen(folder); }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
-              Open Folder
-            </button>
-            <button
-              onClick={() => { setShowMenu(false); onRename(folder); }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              <Edit3 className="h-3.5 w-3.5 text-slate-400" />
-              Rename
-            </button>
-            <button
-              onClick={() => { setShowMenu(false); onMove(folder); }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              <FolderInput className="h-3.5 w-3.5 text-slate-400" />
-              Move Folder
-            </button>
-            <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-            <button
-              onClick={() => { setShowMenu(false); onDelete(folder); }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete Folder
-            </button>
-          </div>
+      <div className="flex items-center gap-1">
+        {folder.drive_link && (
+          <a
+            href={folder.drive_link}
+            target="_blank"
+            rel="noreferrer"
+            title="Open folder in Google Drive"
+            className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/60"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         )}
+
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="rounded-lg p-1 text-slate-400 opacity-80 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            title="Folder actions"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900 text-left">
+              <button
+                onClick={() => { setShowMenu(false); onOpen(folder); }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+                Open Folder
+              </button>
+              {folder.drive_link && (
+                <a
+                  href={folder.drive_link}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setShowMenu(false)}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/60"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 text-blue-500" />
+                  Open in Google Drive
+                </a>
+              )}
+              <button
+                onClick={() => { setShowMenu(false); onRename(folder); }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <Edit3 className="h-3.5 w-3.5 text-slate-400" />
+                Rename
+              </button>
+              <button
+                onClick={() => { setShowMenu(false); onMove(folder); }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <FolderInput className="h-3.5 w-3.5 text-slate-400" />
+                Move Folder
+              </button>
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              <button
+                onClick={() => { setShowMenu(false); onDelete(folder); }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Folder
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

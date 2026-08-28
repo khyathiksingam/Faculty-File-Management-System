@@ -1,3 +1,4 @@
+import React from 'react';
 import { 
   Eye, Download, Share2, Star, MoreVertical, Edit3, 
   Trash2, History, Info, Sparkles, FolderInput, ExternalLink
@@ -30,7 +31,7 @@ export default function FileTable({
             <th className="px-3 py-3.5">Department</th>
             <th className="px-3 py-3.5">Size</th>
             <th className="px-3 py-3.5">Modified</th>
-            <th className="px-3 py-3.5">OCR Status</th>
+            <th className="px-3 py-3.5">Drive / OCR</th>
             <th className="py-3.5 pl-3 pr-4 text-right">Actions</th>
           </tr>
         </thead>
@@ -77,13 +78,13 @@ export default function FileTable({
 
               {/* Owner */}
               <td className="px-3 py-3 text-slate-600 dark:text-slate-400">
-                {file.owner_name || 'You'}
+                {file.owner_name || 'Mrs. P. Devika'}
               </td>
 
               {/* Department */}
               <td className="px-3 py-3">
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  {file.department_code || file.department_name || '—'}
+                  {file.department_code || file.department_name || 'CSE'}
                 </span>
               </td>
 
@@ -97,22 +98,28 @@ export default function FileTable({
                 {formatRelativeTime(file.created_at)}
               </td>
 
-              {/* OCR Status */}
+              {/* Drive Link & OCR Status */}
               <td className="px-3 py-3">
-                {file.ocr_status === 'completed' ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    Indexed
-                  </span>
-                ) : file.ocr_status === 'processing' ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 animate-pulse">
-                    Processing...
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-slate-400">
-                    {file.ocr_status === 'unsupported' ? 'N/A' : 'Pending'}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {file.drive_link && (
+                    <a
+                      href={file.drive_link}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Open directly in Google Docs / Drive"
+                      className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300"
+                    >
+                      <ExternalLink className="h-2.5 w-2.5" />
+                      Drive
+                    </a>
+                  )}
+                  {file.ocr_status === 'completed' && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      <Sparkles className="h-2.5 w-2.5" />
+                      Indexed
+                    </span>
+                  )}
+                </div>
               </td>
 
               {/* Actions */}
@@ -120,13 +127,13 @@ export default function FileTable({
                 <div className="flex items-center justify-end gap-1">
                   {!isTrash ? (
                     <>
-                      {file.external_url && (
+                      {file.drive_link && (
                         <a
-                          href={file.external_url}
+                          href={file.drive_link}
                           target="_blank"
-                          rel="noopener noreferrer"
+                          rel="noreferrer"
                           className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/50"
-                          title="Open in Google Docs / Drive"
+                          title="Open Google Drive Link"
                         >
                           <ExternalLink className="h-4 w-4" />
                         </a>

@@ -79,6 +79,7 @@ function createSchema() {
       department_id INTEGER,
       created_by INTEGER NOT NULL,
       color TEXT DEFAULT 'blue',
+      drive_link TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (parent_folder_id) REFERENCES folders(id) ON DELETE CASCADE,
@@ -101,6 +102,7 @@ function createSchema() {
       ocr_status TEXT DEFAULT 'pending' CHECK(ocr_status IN ('pending', 'processing', 'completed', 'failed', 'unsupported')),
       extracted_text TEXT DEFAULT '',
       is_favorite INTEGER DEFAULT 0,
+      drive_link TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       deleted_at DATETIME DEFAULT NULL,
@@ -213,6 +215,9 @@ function createSchema() {
     CREATE INDEX IF NOT EXISTS idx_activity_dept ON activity_logs(department_id);
     CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, read_status);
   `);
+
+  try { db.run("ALTER TABLE folders ADD COLUMN drive_link TEXT DEFAULT ''"); } catch (e) {}
+  try { db.run("ALTER TABLE files ADD COLUMN drive_link TEXT DEFAULT ''"); } catch (e) {}
 }
 
 function sanitizeParams(params = []) {

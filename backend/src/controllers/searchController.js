@@ -41,7 +41,7 @@ const searchController = {
 
       let sql = `
         SELECT f.id, f.name, f.original_name, f.file_type, f.mime_type, f.size,
-               f.storage_path, f.folder_id, f.owner_id, f.department_id,
+               f.storage_path, f.folder_id, f.owner_id, f.department_id, f.drive_link,
                f.version, f.ocr_status, f.extracted_text, f.created_at, f.updated_at,
                u.full_name as owner_name, u.username as owner_username,
                d.name as department_name, d.code as department_code,
