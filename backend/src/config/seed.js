@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const { initDB, dbHelper } = require('./db');
 
 async function seed() {
-  console.log('--- Initializing and Seeding Clean College Database ---');
+  console.log('--- Initializing Clean College Database (Zero Folders) ---');
   await initDB();
 
   // 1. Seed Roles
@@ -46,17 +46,11 @@ async function seed() {
     `, [existingUser.id]);
   }
 
-  // 5. Seed 10 Google Drive Folders
-  const seedDevikaFiles = require('./seed_devika');
-  await seedDevikaFiles();
+  // 5. Ensure all folders are deleted and files are in root
+  await dbHelper.run('UPDATE files SET folder_id = NULL');
+  await dbHelper.run('DELETE FROM folders');
 
-  // Ensure files table is completely clean (0 files)
-  await dbHelper.run('DELETE FROM file_versions');
-  await dbHelper.run('DELETE FROM shared_files');
-  await dbHelper.run('DELETE FROM favorites');
-  await dbHelper.run('DELETE FROM files');
-
-  console.log('Database initialized with 0 files and 10 Drive Folders ready.');
+  console.log('Database initialized: 0 folders.');
 }
 
 module.exports = seed;
