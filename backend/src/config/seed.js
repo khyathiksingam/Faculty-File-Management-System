@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const { initDB, dbHelper } = require('./db');
 
 async function seed() {
-  console.log('--- Initializing Clean College Database (Zero Folders) ---');
+  console.log('--- Initializing Clean College Database (Single Department) ---');
   await initDB();
 
   // 1. Seed Roles
@@ -25,12 +25,16 @@ async function seed() {
     `);
   }
 
-  // 3. Seed Departments
-  await dbHelper.run("INSERT OR IGNORE INTO departments (id, name, code) VALUES (1, 'Computer Science & Engineering Cyber Security (CSE-CYS)', 'CSE-CYS')");
-  await dbHelper.run("INSERT OR IGNORE INTO departments (id, name, code) VALUES (2, 'Electronics & Communication', 'ECE')");
-  await dbHelper.run("INSERT OR IGNORE INTO departments (id, name, code) VALUES (3, 'Information Technology', 'IT')");
+  // 3. Keep ONLY 1 Department: CSE- (CYS, DS) and AI&DS (Code: CSE)
+  await dbHelper.run("DELETE FROM departments WHERE id != 1 OR name LIKE '%Electronics%' OR name LIKE '%Information Technology%'");
+  const existingDept = await dbHelper.get("SELECT * FROM departments WHERE id = 1");
+  if (existingDept) {
+    await dbHelper.run("UPDATE departments SET name = 'CSE- (CYS, DS) and AI&DS', code = 'CSE' WHERE id = 1");
+  } else {
+    await dbHelper.run("INSERT INTO departments (id, name, code) VALUES (1, 'CSE- (CYS, DS) and AI&DS', 'CSE')");
+  }
 
-  // 4. Seed Devika Admin User
+  // 4. Seed Devika Admin User & Link to Department 1
   const devikaPass = await bcrypt.hash('Faculty@123', 10);
   const existingUser = await dbHelper.get("SELECT * FROM users WHERE username = 'devika' OR username = 'admin'");
   if (!existingUser) {
@@ -41,16 +45,17 @@ async function seed() {
   } else {
     await dbHelper.run(`
       UPDATE users 
-      SET full_name = 'Potta Devika', email = 'p.devika@vnrvjiet.in'
+      SET full_name = 'Potta Devika', email = 'p.devika@vnrvjiet.in', department_id = 1
       WHERE id = ?
     `, [existingUser.id]);
   }
 
-  // 5. Ensure all folders are deleted and files are in root
-  await dbHelper.run('UPDATE files SET folder_id = NULL');
-  await dbHelper.run('DELETE FROM folders');
+  // Ensure all users and files are linked to Department 1
+  await dbHelper.run("UPDATE users SET department_id = 1");
+  await dbHelper.run("UPDATE files SET department_id = 1, folder_id = NULL");
+  await dbHelper.run("DELETE FROM folders");
 
-  console.log('Database initialized: 0 folders.');
+  console.log('Database initialized with only 1 department: CSE- (CYS, DS) and AI&DS');
 }
 
 module.exports = seed;
