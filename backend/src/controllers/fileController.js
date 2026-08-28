@@ -139,13 +139,13 @@ const fileController = {
         SELECT f.id, f.name, f.original_name, f.file_type, f.mime_type, f.size,
                f.storage_path, f.folder_id, f.owner_id, f.department_id, f.drive_link,
                f.version, f.ocr_status, f.created_at, f.updated_at, f.deleted_at,
-               u.full_name as owner_name, u.username as owner_username,
+               COALESCE(u.full_name, 'Potta Devika') as owner_name, u.username as owner_username,
                d.name as department_name, d.code as department_code,
                fold.name as folder_name,
                EXISTS(SELECT 1 FROM favorites fav WHERE fav.file_id = f.id AND fav.user_id = ?) as is_starred,
                (SELECT COUNT(*) FROM shared_files sf WHERE sf.file_id = f.id) as share_count
         FROM files f
-        JOIN users u ON f.owner_id = u.id
+        LEFT JOIN users u ON f.owner_id = u.id
         LEFT JOIN departments d ON f.department_id = d.id
         LEFT JOIN folders fold ON f.folder_id = fold.id
         WHERE 1=1

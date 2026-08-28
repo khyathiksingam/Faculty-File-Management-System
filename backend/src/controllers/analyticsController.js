@@ -23,7 +23,7 @@ const analyticsController = {
 
         // Recent activity
         const recentActivity = await dbHelper.all(`
-          SELECT a.*, u.full_name as user_name, u.username, d.name as department_name
+          SELECT a.*, COALESCE(u.full_name, 'Potta Devika') as user_name, u.username, d.name as department_name
           FROM activity_logs a
           LEFT JOIN users u ON a.user_id = u.id
           LEFT JOIN departments d ON a.department_id = d.id
@@ -33,24 +33,26 @@ const analyticsController = {
 
         // Recent uploaded files
         const recentFiles = await dbHelper.all(`
-          SELECT f.id, f.name, f.file_type, f.size, f.created_at, u.full_name as owner_name, d.name as department_name
+          SELECT f.id, f.name, f.file_type, f.size, f.created_at, f.drive_link,
+                 COALESCE(u.full_name, 'Potta Devika') as owner_name,
+                 d.name as department_name, d.code as department_code
           FROM files f
-          JOIN users u ON f.owner_id = u.id
+          LEFT JOIN users u ON f.owner_id = u.id
           LEFT JOIN departments d ON f.department_id = d.id
           WHERE f.deleted_at IS NULL
           ORDER BY f.created_at DESC
-          LIMIT 6
+          LIMIT 8
         `);
 
         return res.json({
           role: 'admin',
           stats: {
-            totalFaculty: totalFaculty.count,
-            totalHods: totalHods.count,
-            totalDepartments: totalDepts.count,
-            totalFiles: totalFiles.count,
-            totalStorageBytes: totalStorage.bytes,
-            filesUploadedToday: uploadedToday.count,
+            totalFaculty: totalFaculty?.count || 0,
+            totalHods: totalHods?.count || 0,
+            totalDepartments: totalDepts?.count || 0,
+            totalFiles: totalFiles?.count || 0,
+            totalStorageBytes: totalStorage?.bytes || 0,
+            filesUploadedToday: uploadedToday?.count || 0,
             storageQuotaBytes: 20 * 1024 * 1024 * 1024 // 20 GB default quota
           },
           recentActivity,
@@ -60,8 +62,8 @@ const analyticsController = {
         // HOD Dashboard Metrics
         const deptId = user.department_id;
         const deptFaculty = await dbHelper.get("SELECT COUNT(*) as count FROM users WHERE department_id = ? AND status = 'active'", [deptId]);
-        const deptFiles = await dbHelper.get("SELECT COUNT(*) as count FROM files WHERE department_id = ? AND deleted_at IS NULL", [deptId]);
-        const deptStorage = await dbHelper.get("SELECT COALESCE(SUM(size), 0) as bytes FROM files WHERE department_id = ? AND deleted_at IS NULL", [deptId]);
+        const deptFiles = await dbHelper.get("SELECT COUNT(*) as count FROM files WHERE (department_id = ? OR owner_id = ?) AND deleted_at IS NULL", [deptId, user.id]);
+        const deptStorage = await dbHelper.get("SELECT COALESCE(SUM(size), 0) as bytes FROM files WHERE (department_id = ? OR owner_id = ?) AND deleted_at IS NULL", [deptId, user.id]);
         
         const sharedFiles = await dbHelper.get(`
           SELECT COUNT(DISTINCT file_id) as count 
@@ -70,40 +72,43 @@ const analyticsController = {
         `, [deptId, user.id]);
 
         const recentUploads = await dbHelper.all(`
-          SELECT f.id, f.name, f.file_type, f.size, f.created_at, u.full_name as owner_name
+          SELECT f.id, f.name, f.file_type, f.size, f.created_at, f.drive_link,
+                 COALESCE(u.full_name, 'Potta Devika') as owner_name
           FROM files f
-          JOIN users u ON f.owner_id = u.id
-          WHERE f.department_id = ? AND f.deleted_at IS NULL
+          LEFT JOIN users u ON f.owner_id = u.id
+          WHERE (f.department_id = ? OR f.owner_id = ?) AND f.deleted_at IS NULL
           ORDER BY f.created_at DESC
-          LIMIT 6
-        `, [deptId]);
+          LIMIT 8
+        `, [deptId, user.id]);
 
         const deptActivity = await dbHelper.all(`
-          SELECT a.*, u.full_name as user_name, u.username
+          SELECT a.*, COALESCE(u.full_name, 'Potta Devika') as user_name, u.username
           FROM activity_logs a
-          JOIN users u ON a.user_id = u.id
-          WHERE a.department_id = ?
+          LEFT JOIN users u ON a.user_id = u.id
+          WHERE a.department_id = ? OR a.user_id = ?
           ORDER BY a.created_at DESC
           LIMIT 8
-        `, [deptId]);
+        `, [deptId, user.id]);
 
         return res.json({
           role: 'hod',
           stats: {
-            departmentFaculty: deptFaculty.count,
-            departmentFiles: deptFiles.count,
-            departmentStorageBytes: deptStorage.bytes,
-            sharedFilesCount: sharedFiles.count,
+            departmentFaculty: deptFaculty?.count || 0,
+            departmentFiles: deptFiles?.count || 0,
+            departmentStorageBytes: deptStorage?.bytes || 0,
+            sharedFilesCount: sharedFiles?.count || 0,
             departmentName: user.department_name
           },
           recentUploads,
-          deptActivity
+          recentFiles: recentUploads,
+          deptActivity,
+          recentActivity: deptActivity
         });
       } else {
         // Faculty Dashboard Metrics
-        const myFiles = await dbHelper.get("SELECT COUNT(*) as count FROM files WHERE owner_id = ? AND deleted_at IS NULL", [user.id]);
-        const myStorage = await dbHelper.get("SELECT COALESCE(SUM(size), 0) as bytes FROM files WHERE owner_id = ? AND deleted_at IS NULL", [user.id]);
-        const myFolders = await dbHelper.get("SELECT COUNT(*) as count FROM folders WHERE created_by = ?", [user.id]);
+        const myFiles = await dbHelper.get("SELECT COUNT(*) as count FROM files WHERE (owner_id = ? OR department_id = ?) AND deleted_at IS NULL", [user.id, user.department_id || -1]);
+        const myStorage = await dbHelper.get("SELECT COALESCE(SUM(size), 0) as bytes FROM files WHERE (owner_id = ? OR department_id = ?) AND deleted_at IS NULL", [user.id, user.department_id || -1]);
+        const myFolders = await dbHelper.get("SELECT COUNT(*) as count FROM folders WHERE created_by = ? OR department_id = ?", [user.id, user.department_id || -1]);
         
         const sharedWithMe = await dbHelper.get(`
           SELECT COUNT(DISTINCT sf.file_id) as count
@@ -116,22 +121,25 @@ const analyticsController = {
         const starredCount = await dbHelper.get("SELECT COUNT(*) as count FROM favorites fav JOIN files f ON fav.file_id = f.id WHERE fav.user_id = ? AND f.deleted_at IS NULL", [user.id]);
 
         const recentFiles = await dbHelper.all(`
-          SELECT f.id, f.name, f.file_type, f.size, f.created_at, f.version,
+          SELECT f.id, f.name, f.file_type, f.size, f.created_at, f.version, f.drive_link,
+                 COALESCE(u.full_name, 'Potta Devika') as owner_name,
                  EXISTS(SELECT 1 FROM favorites fav WHERE fav.file_id = f.id AND fav.user_id = ?) as is_starred
           FROM files f
+          LEFT JOIN users u ON f.owner_id = u.id
           WHERE (f.owner_id = ? OR f.department_id = ?) AND f.deleted_at IS NULL
           ORDER BY f.created_at DESC
-          LIMIT 6
+          LIMIT 8
         `, [user.id, user.id, user.department_id || -1]);
 
         return res.json({
           role: 'faculty',
           stats: {
-            totalFiles: myFiles.count,
-            storageUsedBytes: myStorage.bytes,
-            myFolders: myFolders.count,
-            sharedWithMe: sharedWithMe.count,
-            starredCount: starredCount.count
+            totalFiles: myFiles?.count || 0,
+            myFilesCount: myFiles?.count || 0,
+            storageUsedBytes: myStorage?.bytes || 0,
+            myFoldersCount: myFolders?.count || 0,
+            sharedWithMe: sharedWithMe?.count || 0,
+            starredCount: starredCount?.count || 0
           },
           recentFiles
         });
@@ -148,20 +156,20 @@ const analyticsController = {
       const isAdmin = user.role_name === 'admin';
       const isHOD = user.role_name === 'hod';
 
-      let filterSql = "WHERE deleted_at IS NULL";
+      let filterSql = "WHERE f.deleted_at IS NULL";
       let filterParams = [];
 
       if (!isAdmin && isHOD) {
-        filterSql += " AND department_id = ?";
+        filterSql += " AND f.department_id = ?";
         filterParams.push(user.department_id);
       } else if (!isAdmin && !isHOD) {
-        filterSql += " AND owner_id = ?";
-        filterParams.push(user.id);
+        filterSql += " AND (f.owner_id = ? OR f.department_id = ?)";
+        filterParams.push(user.id, user.department_id || -1);
       }
 
       // Total Storage
       const totalStorageRes = await dbHelper.get(
-        `SELECT COALESCE(SUM(size), 0) as total_bytes, COUNT(*) as file_count FROM files ${filterSql}`,
+        `SELECT COALESCE(SUM(f.size), 0) as total_bytes, COUNT(*) as file_count FROM files f ${filterSql}`,
         filterParams
       );
 
@@ -178,22 +186,22 @@ const analyticsController = {
 
       // Storage by File Type Category
       const byType = await dbHelper.all(`
-        SELECT file_type, 
-               COALESCE(SUM(size), 0) as storage_bytes,
+        SELECT f.file_type, 
+               COALESCE(SUM(f.size), 0) as storage_bytes,
                COUNT(*) as count
-        FROM files
+        FROM files f
         ${filterSql}
-        GROUP BY file_type
+        GROUP BY f.file_type
         ORDER BY storage_bytes DESC
       `, filterParams);
 
-      // Top 10 Largest Files
+      // Top Largest Files in Repository
       const largestFiles = await dbHelper.all(`
-        SELECT f.id, f.name, f.file_type, f.size, f.created_at,
-               u.full_name as owner_name,
-               d.name as department_name
+        SELECT f.id, f.name, f.file_type, f.size, f.created_at, f.drive_link,
+               COALESCE(u.full_name, 'Potta Devika') as owner_name,
+               COALESCE(d.name, 'General') as department_name
         FROM files f
-        JOIN users u ON f.owner_id = u.id
+        LEFT JOIN users u ON f.owner_id = u.id
         LEFT JOIN departments d ON f.department_id = d.id
         ${filterSql}
         ORDER BY f.size DESC
@@ -203,11 +211,11 @@ const analyticsController = {
       const totalQuota = 20 * 1024 * 1024 * 1024; // 20 GB default
 
       res.json({
-        totalStorageBytes: totalStorageRes.total_bytes,
-        totalFiles: totalStorageRes.file_count,
+        totalStorageBytes: totalStorageRes?.total_bytes || 0,
+        totalFiles: totalStorageRes?.file_count || 0,
         storageQuotaBytes: totalQuota,
-        availableStorageBytes: Math.max(0, totalQuota - totalStorageRes.total_bytes),
-        usedPercentage: Math.min(100, Math.round((totalStorageRes.total_bytes / totalQuota) * 100 * 10) / 10),
+        availableStorageBytes: Math.max(0, totalQuota - (totalStorageRes?.total_bytes || 0)),
+        usedPercentage: Math.min(100, Math.round(((totalStorageRes?.total_bytes || 0) / totalQuota) * 100 * 10) / 10),
         byDepartment,
         byType,
         largestFiles

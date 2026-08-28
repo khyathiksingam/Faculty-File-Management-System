@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Files, Folder, Users, Building2, HardDrive, Star, Clock, 
-  Upload, ArrowRight, Shield, Activity, FileText, CheckCircle2, TrendingUp
+  Upload, ArrowRight, Shield, Activity, FileText, CheckCircle2, TrendingUp, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -13,6 +13,7 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
   const { user, isAdmin, isHOD, isFaculty } = useAuth();
   const { isDark } = useTheme();
   const [data, setData] = useState(null);
+  const [fallbackFiles, setFallbackFiles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,15 +25,28 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
     try {
       const res = await api.get('/analytics/dashboard');
       setData(res);
+
+      if (!res?.recentFiles || res.recentFiles.length === 0) {
+        const filesRes = await api.get('/files', { limit: 8, sort: 'newest' });
+        setFallbackFiles(filesRes?.files || []);
+      }
     } catch (err) {
       console.warn('Dashboard fetch error:', err);
+      try {
+        const filesRes = await api.get('/files', { limit: 8, sort: 'newest' });
+        setFallbackFiles(filesRes?.files || []);
+      } catch (e) {}
     } finally {
       setLoading(false);
     }
   };
 
   const stats = data?.stats || {};
-  const recentFiles = data?.recentFiles || data?.recentUploads || [];
+  const recentFiles = (data?.recentFiles && data.recentFiles.length > 0) 
+    ? data.recentFiles 
+    : (data?.recentUploads && data.recentUploads.length > 0)
+    ? data.recentUploads
+    : fallbackFiles;
   const recentActivity = data?.recentActivity || data?.deptActivity || [];
 
   return (
@@ -296,7 +310,7 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
                 No recent files found. Upload a file to get started.
               </div>
             ) : (
-              recentFiles.slice(0, 5).map((file) => (
+              recentFiles.slice(0, 6).map((file) => (
                 <div
                   key={file.id}
                   onClick={() => onPreviewFile && onPreviewFile(file)}
@@ -307,18 +321,33 @@ export default function DashboardPage({ onNavigate, onUploadClick, onPreviewFile
                       {getFileIcon(file.file_type, "h-5 w-5")}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">
-                        {file.name}
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">
+                          {file.name}
+                        </span>
+                        {file.drive_link && (
+                          <a
+                            href={file.drive_link}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/70 dark:text-blue-300"
+                            title="Open in Google Docs / Drive"
+                          >
+                            <ExternalLink className="h-2.5 w-2.5" />
+                            <span>Drive</span>
+                          </a>
+                        )}
                       </div>
-                      <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-2">
-                        <span>{file.owner_name || user?.full_name}</span>
+                      <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-2 mt-0.5">
+                        <span>{file.owner_name || user?.full_name || 'Mrs. P. Devika'}</span>
                         <span>•</span>
                         <span>{formatBytes(file.size)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                  <div className="text-[11px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap ml-2">
                     {formatRelativeTime(file.created_at)}
                   </div>
                 </div>
