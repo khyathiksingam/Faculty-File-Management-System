@@ -94,7 +94,7 @@ export default function FavoritesPage() {
           description="Click the star icon on any document to add it to your favorites for rapid access."
         />
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           {files.map(file => (
             <FileCard
               key={file.id}
